@@ -1,6 +1,7 @@
 # pocket1090
 Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder
 
+**WIP**
 
 ## Automatic Dependent Surveillance-Broadcast (ADS-B) Notes
 * 1090MHz: Mode-A/C/S transponder
@@ -13,9 +14,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - for general aviation, its the aircraft's registration number
 * ICAO address: 24b unique address, programmed at installation (like a MAC address?)
 * in UAT Anonymous Mode, may not send ICAO address
-
-
-**WIP**
 
 ## Design Notes
 * use dump1090-fa to emit json files, generate console display using matplotlib
