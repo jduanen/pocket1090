@@ -24,7 +24,8 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - selectable range (between some min/max values that make sense)
   - use NATO symbology? -- shape indicates type, vector indicates heading and speed, text for other values
   - touch icon to get additional info pop-up
-    * e.g., squawk, emergency, altitude, RSSI, roll, category, nav mode, seen
+    * e.g., squawk, emergency, altitude, RSSI, roll, category, nav mode, seen, *_rate
+  - age tracks by dimming them -- larger 'seen' value, the dimmer the track
 * maybe a shaft-encoder or tiny joystick as additional input
 * on-board LiPo charger and USB-C connection (power and RasPi interface)
 * poll <path>/aircraft.json for data
@@ -42,5 +43,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - enable offline analysis or replay of tracks
 * set alarms -- things to watch for
   - e.g., specific planes, specific types of planes, specific metrics?
+
 
 
