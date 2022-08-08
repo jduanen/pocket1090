@@ -8,19 +8,20 @@
 #
 # **TODO**
 # * ?
+#
+# N.B.
+#  need to do "export SDL_VIDEODRIVER='dummy'"
+#  workon POCKET_1090
+#  /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+#
+#
 ################################################################################
 
 import argparse
 from dataclasses import dataclass
-from enum import Enum
 import json
 import logging
 import math
-import matplotlib as mpl
-import matplotlib.patches as patches
-from matplotlib.path import Path
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import sys
 import time
@@ -28,96 +29,37 @@ import yaml
 
 from __init__ import * #### FIXME
 
+from Compass import Compass
+from GPS import GPS
+from RadarDisplay import RadarDisplay
+from Track import Track
+
 
 DEF_CONFIG_FILE = "./pocket1090.yml"
 
 DEFAULT_CONFIG = {
-    'logLevel': "INFO",  #"DEBUG"  #"WARNING"
+    'logLevel': "DEBUG",  #"DEBUG" #"INFO" #"WARNING"
     'logFile': None,  # None means use stdout
 }
 
+REQUIRED_FIELDS = set({'lat', 'lon'})
 
-class EntityType(Enum):
-    STATIC = 0
-    DYNAMIC = 1
-
-class Category(Enum):
-    A0 = 0  # No ADS-B emitter category information
-    A1 = 1  # Light (< 15500 lbs)
-    A2 = 2  # Small (15500 to 75000 lbs)
-    A3 = 3  # Large (75000 to 300000 lbs)
-    A4 = 4  # High vortex large (aircraft such as B-757)
-    A5 = 5  # Heavy (> 300000 lbs)
-    A6 = 6  # High performance (> 5g acceleration and 400 kts)
-    A7 = 7  # Rotorcraft
-
-    B0 = 8  # No ADS-B emitter category information
-    B1 = 9  # Glider / sailplane
-    B2 = 10 # Lighter-than-air
-    B3 = 11 # Parachutist / skydiver
-    B4 = 12 # Ultralight / hang-glider / paraglider
-    B5 = 13 # Reserved
-    B6 = 14 # Unmanned aerial vehicle
-    B7 = 15 # Space / trans-atmospheric vehicle
-
-    C0 = 16 # No ADS-B emitter category information
-    C1 = 17 # Surface vehicle – emergency vehicle
-    C2 = 18 # Surface vehicle – service vehicle
-    C3 = 19 # Point obstacle (includes tethered balloons)
-    C4 = 20 # Cluster obstacle
-    C5 = 21 # Line obstacle
-    C6 = 22 # Reserved
-    C7 = 23 # Reserved
+TRACK_KEYS = ('hex', 'flight', 'alt_geom', 'gs', 'track', 'category', 'lat', 'lon', 'seen_pos', 'seen', 'rssi')
+TRACK_DEFS = {'hex': "unknown", 'flight': "n/a", 'alt_geom': None, 'gs': None, 'track': None, 'category': "?", 'lat': None, 'lon': None, 'seen_pos': None, 'seen': None, 'rssi': None}
 
 @dataclass
-class Coordinate:
-    x: float
-    y: float
-
-    def __add__(self, other):
-        new = Coordinate(self.x, self.y)
-        new.x += other.x
-        new.y += other.y
-        return new
-
-    def __sub__(self, other):
-        new = Coordinate(self.x, self.y)
-        new.x -= other.x
-        new.x = new.x if new.x >= 0.0 else 0.0
-        new.y -= other.y
-        new.y = new.y if new.y >= 0.0 else 0.0
-
-@dataclass
-class Motion:
-    steeringAngle: float
-    velocity: float
-    duration: float
-
-
-'''
-"""The ? object ????"""
-class ?():
-  def __init__(self):
-
-  def render(self, ax, color="gray"):
-    vertices = [
-                (self.x1, self.y1), # BL
-                (self.x1, self.y2), # LT
-                (self.x2, self.y2), # RT
-                (self.x2, self.y1),  # RB
-                (0.0, 0.0)
-    ]
-    codes = [
-             Path.MOVETO,
-             Path.LINETO,
-             Path.LINETO,
-             Path.LINETO,
-             Path.CLOSEPOLY
-    ]
-    path = Path(vertices, codes)
-    patch = patches.PathPatch(path, facecolor=color, lw=2)
-    ax.add_patch(patch)
-'''
+class Track():
+    uniqueId: str       # hex: 24-bit ICAO id, six hex digits, non-ICAO addresses start with '~'
+    flightNumber: str   # flight: callsign, the flight name or aircraft registration as 8 chars
+    altitude: int       # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
+    speed: float        # gs: ground speed in knots
+    track: float        # track: true track over ground in degrees (0-359)
+    category: str       # category: emitter category, identifies aircraft classes (values "A0"-"D7")
+    lat: float          # lat: aircraft position in decimal degrees
+    lon: float          # lon: aircraft position in decimal degrees
+    seenPos: float      # seen_pos: how many seconds before "now" the position was last updated
+    seen: float         # seen: how many seconds before "now" a message was last received from this aircraft
+    rssi: float         # rssi: recent average RSSI (in dbFS); this will always be negative
 
 
 def run(options):
@@ -129,9 +71,14 @@ def run(options):
         json.dump(rcvrInfo, sys.stdout, indent=4, sort_keys=True)
         print("")
 
+    #### TODO init display
+    screen = RadarDisplay()
+
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
     lastTs = 0
+    now = None
+    msgCount = 0
     while running:
         ts = os.stat(aircraftFile).st_mtime
         print("TS: ", ts)
@@ -140,11 +87,40 @@ def run(options):
             time.sleep(0.5)
         lastTs = ts
         with open(aircraftFile, "r") as f:
-            aircraftInfo = json.load(f)
-        if options.verbose:
+            j = json.load(f)
+            now = j['now']
+            msgCount = j['messages']
+            unfilteredAircraftInfo = {a['hex']: a for a in j['aircraft']}
+        aircraftInfo = {k: v for k, v in unfilteredAircraftInfo.items() if REQUIRED_FIELDS.issubset(v.keys())}
+        added, removed, changed, unchanged = dictDiff(aircraftInfo, unfilteredAircraftInfo)
+        filtered = {k: v for k, v in unfilteredAircraftInfo.items() if k in removed}
+        ##logging.debug(f"Filtered: {filtered}, {len(added)}, {len(removed)}, {len(changed)}, {len(unchanged)}")
+        if options.verbose > 1:
             print("Aircraft Info:")
             json.dump(aircraftInfo, sys.stdout, indent=4, sort_keys=True)
             print("")
+        ##logging.debug(f"Current number of aircraft: {len(aircraftInfo)}")
+        if options.verbose:
+            currentFlightNums = [a['flight'] for a in aircraftInfo.values() if 'flight' in a]
+            if currentFlightNums:
+                print(f"Flight #s: {currentFlightNums}")
+
+        #### TODO detect "interesting" cases (e.g., emergency, other than "A?")
+        emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
+        if emergencies:
+            print(f"\nEmergencies: {emergencies}\n")
+        oddVehicles = {k: v for k, v in aircraftInfo.items() if not v.get('category', "A").startswith("A")}
+        if oddVehicles:
+            print(f"\nUnusual Vehicles: {oddVehicles}\n")
+
+        #### TODO build tracks
+
+        #### TODO update display
+        for uniqueId, info in aircraftInfo.items():
+            trackVals = [info.get(k, None) for k in TRACK_KEYS]
+            track = Track(*trackVals)
+            print(f"{uniqueId}: {track}")
+            screen.render()
 
     print("DONE")
     return 0
