@@ -5,6 +5,7 @@
 ################################################################################
 
 
+from dataclasses import dataclass
 from enum import Enum
 import sys
 from time import sleep
@@ -59,3 +60,50 @@ def dictMerge(old, new):
             dictMerge(old[k], new[k])
         else:
             old[k] = new[k]
+
+
+class Category(Enum):
+    A0 = 0  # No ADS-B emitter category information
+    A1 = 1  # Light (< 15500 lbs)
+    A2 = 2  # Small (15500 to 75000 lbs)
+    A3 = 3  # Large (75000 to 300000 lbs)
+    A4 = 4  # High vortex large (aircraft such as B-757)
+    A5 = 5  # Heavy (> 300000 lbs)
+    A6 = 6  # High performance (> 5g acceleration and 400 kts)
+    A7 = 7  # Rotorcraft
+
+    B0 = 8  # No ADS-B emitter category information
+    B1 = 9  # Glider / sailplane
+    B2 = 10 # Lighter-than-air
+    B3 = 11 # Parachutist / skydiver
+    B4 = 12 # Ultralight / hang-glider / paraglider
+    B5 = 13 # Reserved
+    B6 = 14 # Unmanned aerial vehicle
+    B7 = 15 # Space / trans-atmospheric vehicle
+
+    C0 = 16 # No ADS-B emitter category information
+    C1 = 17 # Surface vehicle – emergency vehicle
+    C2 = 18 # Surface vehicle – service vehicle
+    C3 = 19 # Point obstacle (includes tethered balloons)
+    C4 = 20 # Cluster obstacle
+    C5 = 21 # Line obstacle
+    C6 = 22 # Reserved
+    C7 = 23 # Reserved
+
+@dataclass
+class Coordinate:
+    x: float
+    y: float
+
+    def __add__(self, other):
+        new = Coordinate(self.x, self.y)
+        new.x += other.x
+        new.y += other.y
+        return new
+
+    def __sub__(self, other):
+        new = Coordinate(self.x, self.y)
+        new.x -= other.x
+        new.x = new.x if new.x >= 0.0 else 0.0
+        new.y -= other.y
+        new.y = new.y if new.y >= 0.0 else 0.0
