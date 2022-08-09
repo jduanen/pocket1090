@@ -18,7 +18,6 @@
 ################################################################################
 
 import argparse
-from dataclasses import dataclass
 import json
 import logging
 import math
@@ -32,7 +31,7 @@ from __init__ import * #### FIXME
 from Compass import Compass
 from GPS import GPS
 from RadarDisplay import RadarDisplay
-from Track import Track
+from Track import TrackSpec, Track
 
 
 DEF_CONFIG_FILE = "./pocket1090.yml"
@@ -44,23 +43,6 @@ DEFAULT_CONFIG = {
 
 REQUIRED_FIELDS = set({'lat', 'lon'})
 
-TRACK_KEYS = ('hex', 'flight', 'alt_geom', 'gs', 'track', 'category', 'lat', 'lon', 'seen_pos', 'seen', 'rssi')
-TRACK_DEFS = {'hex': "unknown", 'flight': "n/a", 'alt_geom': None, 'gs': None, 'track': None, 'category': "?", 'lat': None, 'lon': None, 'seen_pos': None, 'seen': None, 'rssi': None}
-
-@dataclass
-class Track():
-    uniqueId: str       # hex: 24-bit ICAO id, six hex digits, non-ICAO addresses start with '~'
-    flightNumber: str   # flight: callsign, the flight name or aircraft registration as 8 chars
-    altitude: int       # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
-    speed: float        # gs: ground speed in knots
-    track: float        # track: true track over ground in degrees (0-359)
-    category: str       # category: emitter category, identifies aircraft classes (values "A0"-"D7")
-    lat: float          # lat: aircraft position in decimal degrees
-    lon: float          # lon: aircraft position in decimal degrees
-    seenPos: float      # seen_pos: how many seconds before "now" the position was last updated
-    seen: float         # seen: how many seconds before "now" a message was last received from this aircraft
-    rssi: float         # rssi: recent average RSSI (in dbFS); this will always be negative
-
 
 def run(options):
     rcvrFile = os.path.join(options.path, "receiver.json")
@@ -71,14 +53,17 @@ def run(options):
         json.dump(rcvrInfo, sys.stdout, indent=4, sort_keys=True)
         print("")
 
-    #### TODO init display
-    screen = RadarDisplay()
+    gps = GPS()
+    compass = Compass()
+    screen = RadarDisplay(rangeName="mid")
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
     lastTs = 0
     now = None
     msgCount = 0
+    rangeNames = screen.rangeNames()
+    tracks = {}
     while running:
         ts = os.stat(aircraftFile).st_mtime
         print("TS: ", ts)
@@ -113,15 +98,23 @@ def run(options):
         if oddVehicles:
             print(f"\nUnusual Vehicles: {oddVehicles}\n")
 
-        #### TODO build tracks
-
-        #### TODO update display
         for uniqueId, info in aircraftInfo.items():
-            trackVals = [info.get(k, None) for k in TRACK_KEYS]
-            track = Track(*trackVals)
-            print(f"{uniqueId}: {track}")
-            screen.render()
-
+            if uniqueId in tracks.keys():
+                tracks[uniqueId].update(ts, **info)
+                logging.debug(f"Updated track '{uniqueId}'")
+            else:
+                tracks[uniqueId] = Track(ts, **info)
+                logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
+        azimuth = compass.getAzimuth()
+        location = gps.getLocation()
+        logging.debug(f"Azimuth: {azimuth}, Location: {location}")
+        uids = aircraftInfo.keys()
+        tracks = {k: v for k,v in tracks.items() if k in uids}
+        if False:
+            #### FIXME
+            r = 0
+            screen.selectRange(rangeNames[r])
+        screen.render(azimuth, location, tracks)
     print("DONE")
     return 0
 
