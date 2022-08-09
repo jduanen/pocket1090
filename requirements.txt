@@ -1,3 +1,4 @@
+geopy
 matplotlib
 numpy
 pygame
