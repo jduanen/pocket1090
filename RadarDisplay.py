@@ -105,7 +105,7 @@ class RadarDisplay():
 
             text = self.font.render(f"{ring[1]}km", True, self.fontColor, self.bgColor)
             textRect = text.get_rect()
-            textRect.center = (160, (160 - ring[0] + (textRect.h / 2)))
+            textRect.center = (self.center[0], (self.center[1] - ring[0] + (textRect.h / 2)))
             rangeRings.blit(text, textRect)
         return rangeRings
 
