@@ -4,6 +4,8 @@
 #
 ################################################################################
 
+from collections import namedtuple
+from dataclasses import astuple
 from geopy import distance
 import logging
 
@@ -19,9 +21,12 @@ DEF_DISPLAY_HEIGHT = 480
 DEF_RANGE_NAME = "mid"
 DEF_BACKGROUND_COLOR = (32, 32, 32)
 DEF_RANGE_RING_COLOR = (255, 255, 0)
-DEF_FONT_COLOR = (0, 240, 0)
+DEF_FONT_COLOR = (240, 0, 240)
 FONT_SIZE = 10
 SELF_COLOR = (255, 0, 0)
+
+
+Ring = namedtuple("Ring", "radius km")
 
 
 class RadarDisplay():
@@ -33,12 +38,12 @@ class RadarDisplay():
         self.ringColor = ringColor
         self.fontColor = fontColor
 
-        self.center = ((width / 2), (height / 2))
+        self.center = Coordinate((width / 2), (height / 2))
         self.rings = {
-            'near': (((self.width / 8), 0.25), ((self.width / 4), 0.5), ((self.width / 2), 1.0)),
-            'mid': (((self.width / 8), 1.0), ((self.width / 4), 2.0), ((self.width / 2), 4.0)),
-            'far': (((self.width / 8), 4.0), ((self.width / 4), 8.0), ((self.width / 2), 16.0)),
-            'max': (((self.width / 16), 4.0), ((self.width / 8), 8.0), ((self.width / 4), 16.0), ((self.width / 2), 32.0))
+            'near': (Ring((self.width / 8), 0.25), Ring((self.width / 4), 0.5), Ring((self.width / 2), 1.0)),
+            'mid': (Ring((self.width / 8), 1.0), Ring((self.width / 4), 2.0), Ring((self.width / 2), 4.0)),
+            'far': (Ring((self.width / 8), 4.0), Ring((self.width / 4), 8.0), Ring((self.width / 2), 16.0)),
+            'max': (Ring((self.width / 16), 4.0), Ring((self.width / 8), 8.0), Ring((self.width / 4), 16.0), Ring((self.width / 2), 32.0))
         }
 
         pygame.init()
@@ -85,13 +90,15 @@ class RadarDisplay():
         selfSymbol.fill(self.bgColor)
         selfSymbol.set_colorkey(self.bgColor)
         pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), (delta, (2 * delta)))
-        pygame.draw.line(selfSymbol, SELF_COLOR, (0, delta), ((2 * delta), delta))
+        pygame.draw.line(selfSymbol, SELF_COLOR, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
+        pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), ((0.5 * delta), (0.5 * delta)))
+        pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), ((1.5 * delta), (0.5 * delta)))
         return selfSymbol
 
     def _renderSelfSymbol(self):
         s = pygame.transform.rotate(self.selfSymbol, self.rotation)
-        self.surface.blit(s, ((self.center[0] - (s.get_width() / 2)),
-                              (self.center[1] - (s.get_height() / 2))))
+        self.surface.blit(s, ((self.center.x - (s.get_width() / 2)),
+                              (self.center.y - (s.get_height() / 2))))
 
     def _createRangeRings(self):
         """Draw the labeled range rings for the selected range onto the rangeRings surface
@@ -101,11 +108,11 @@ class RadarDisplay():
         rangeRings.fill(self.bgColor)
         rangeRings.set_colorkey(self.bgColor)
         for ring in self.rangeSpec:
-            pygame.draw.circle(rangeRings, self.ringColor, self.center, ring[0], 1)
+            pygame.draw.circle(rangeRings, self.ringColor, astuple(self.center), ring.radius, 1)
 
-            text = self.font.render(f"{ring[1]}km", True, self.fontColor, self.bgColor)
+            text = self.font.render(f"{ring.km}km", True, self.fontColor, self.bgColor)
             textRect = text.get_rect()
-            textRect.center = (self.center[0], (self.center[1] - ring[0] + (textRect.h / 2)))
+            textRect.center = (self.center.x, (self.center.y - ring.radius + (textRect.h / 2)))
             rangeRings.blit(text, textRect)
         return rangeRings
 
@@ -113,9 +120,8 @@ class RadarDisplay():
         """Render the range rings onto the display surface
           #### TODO
         """
-        r = pygame.transform.rotate(self.rangeRings, self.rotation)
-        self.surface.blit(r, ((self.center[0] - (r.get_width() / 2)),
-                              (self.center[1] - (r.get_height() / 2))))
+        self.surface.blit(self.rangeRings, ((self.center.x - (self.rangeRings.get_width() / 2)),
+                                            (self.center.y - (self.rangeRings.get_height() / 2))))
 
     def _initScreen(self):
         """Clear the screen and draw the static elements (i.e., range rings and self symbol)
@@ -150,14 +156,13 @@ class RadarDisplay():
         """
         self.rotation = rotation
         self._initScreen()
-        #### TODO add tracks
         for uid, track in tracks.items():
-            dist = distance.distance(location, (track.lat, track.lon))
+            dist = distance.distance(astuple(location), (track.lat, track.lon)).km
             if dist > self.rangeSpec[-1][1]:
                 logging.info(f"Track '{uid}' out of range: {dist}")
-#               continue
-            latDist = distance.distance(location, (track.lat, location[1]))
-            lonDist = distance.distance(location, (location[0], track.lon))
-            print(f"Track {uid}: {dist}, {latDist}, {lonDist}")
+                continue
+            latDist = distance.distance(astuple(location), (track.lat, location.lon)).km
+            lonDist = distance.distance(astuple(location), (location.lat, track.lon)).km
+            print(f"Track {uid}: {dist:.2f}, {latDist:.2f}, {lonDist:.2f}")
             print(f"    alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
         pygame.display.flip()
