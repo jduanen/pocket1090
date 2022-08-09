@@ -107,3 +107,21 @@ class Coordinate:
         new.x = new.x if new.x >= 0.0 else 0.0
         new.y -= other.y
         new.y = new.y if new.y >= 0.0 else 0.0
+
+@dataclass
+class Location:
+    lat: float
+    lon: float
+
+    def __add__(self, other):
+        new = Coordinate(self.lat, self.lon)
+        new.lat += other.lat
+        new.lon += other.lon
+        return new
+
+    def __sub__(self, other):
+        new = Coordinate(self.lat, self.lon)
+        new.lat -= other.lat
+        new.lat = new.lat if new.lat >= 0.0 else 0.0
+        new.lon -= other.lon
+        new.lon = new.lon if new.lon >= 0.0 else 0.0
