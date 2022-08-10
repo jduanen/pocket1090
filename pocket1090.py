@@ -55,7 +55,7 @@ def run(options):
 
     gps = GPS()
     compass = Compass()
-    screen = RadarDisplay(rangeName="mid")
+    screen = RadarDisplay(rangeName="max")
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
@@ -90,7 +90,7 @@ def run(options):
             if currentFlightNums:
                 print(f"Flight #s: {currentFlightNums}")
 
-        #### TODO detect "interesting" cases (e.g., emergency, other than "A?")
+        #### TODO detect "interesting" cases (e.g., emergency, other than "A?") and save them
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
         if emergencies:
             print(f"\nEmergencies: {emergencies}\n")
@@ -105,16 +105,16 @@ def run(options):
             else:
                 tracks[uniqueId] = Track(ts, **info)
                 logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
-        azimuth = compass.getAzimuth()
-        location = gps.getLocation()
-        logging.debug(f"Azimuth: {azimuth}, Location: {location}")
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
         if False:
             #### FIXME
             r = 0
             screen.selectRange(rangeNames[r])
-        screen.render(azimuth, location, tracks)
+        azimuth = compass.getAzimuth()
+        selfLocation = gps.currentLocation()
+        logging.debug(f"Self: azimuth={azimuth}, location={selfLocation}")
+        screen.render(azimuth, selfLocation, tracks)
     print("DONE")
     return 0
 
