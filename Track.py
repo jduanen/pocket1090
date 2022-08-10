@@ -46,17 +46,17 @@ class Track():
         """#### TODO
         """
         #### TODO fix TRACK_DEFS and use it for better defaults
-        self.uniqueId = kwargs.get('hex', None)
-        self.flightNumber = kwargs.get('flight', None)
-        self.altitude = kwargs.get('alt_geom', None)
-        self.speed = kwargs.get('gs', None)
-        self.heading = kwargs.get('track', None)
-        self.category = kwargs.get('category', None)
-        self.lat = kwargs.get('lat', None)
-        self.lon = kwargs.get('lon', None)
-        self.seenPos = kwargs.get('seen_pos', None)
-        self.seen = kwargs.get('seen', None)
-        self.rssi = kwargs.get('rssi', None)
+        self.uniqueId = kwargs.get('hex', TRACK_DEFS['hex'])
+        self.flightNumber = kwargs.get('flight', TRACK_DEFS['flight'])
+        self.altitude = kwargs.get('alt_geom', TRACK_DEFS['alt_geom'])
+        self.speed = kwargs.get('gs', TRACK_DEFS['gs'])
+        self.heading = kwargs.get('track', TRACK_DEFS['track'])
+        self.category = kwargs.get('category', TRACK_DEFS['category'])
+        self.lat = kwargs.get('lat', TRACK_DEFS['lat'])
+        self.lon = kwargs.get('lon', TRACK_DEFS['lon'])
+        self.seenPos = kwargs.get('seen_pos', TRACK_DEFS['seen_pos'])
+        self.seen = kwargs.get('seen', TRACK_DEFS['seen'])
+        self.rssi = kwargs.get('rssi', TRACK_DEFS['rssi'])
         self.timestamp = timestamp
 
         if self.currentTrack:
