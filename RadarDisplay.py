@@ -132,7 +132,9 @@ class RadarDisplay():
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
-        #### TODO create and use bitmap files for A[0-7] and ? categories
+        #### TODO fix rotation of symbol to match vector
+        #### TODO use fewer shapes, change size of common shapes, use color to show main types
+        #### TODO use color codes and improve shapes of symbols
         #### TODO age symbols by changing alpha value with seen times ?
         #### TODO add trails
         symbol = self.symbols[symbolName]
@@ -162,14 +164,9 @@ class RadarDisplay():
         textRect.midtop = (position[0], (position[1] + 7))
         self.surface.blit(text, textRect)
 
-        '''
-        s = pygame.transform.rotate(symbol, angle)
-        self.surface.blit(s, ((self.center.x - (s.get_width() / 2)),
-                              (self.center.y - (s.get_height() / 2))))
-        self.surface.blit(symbol, (position[0], position[1]))
-        '''
-        self.surface.blit(symbol, ((position[0] - (symbol.get_width() / 2)),
-                                   (position[1] - (symbol.get_height() / 2))))
+        s = pygame.transform.rotate(symbol, ((angle + 180) % 360))
+        self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
+                              (position[1] - (s.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -286,7 +283,7 @@ class RadarDisplay():
                 elif event.key == K_BACKSPACE:
                     print("BS")
             if event.type == KEYUP:
-            if event.key == K_LEFT:
+                if event.key == K_LEFT:
                     print("released LEFT")
                 elif event.key == K_RIGHT:
                     print("released RIGHT")
