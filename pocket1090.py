@@ -55,16 +55,18 @@ def run(options):
 
     gps = GPS()
     compass = Compass()
-    screen = RadarDisplay(rangeName="max")
+    screen = RadarDisplay(rangeNumber=5, verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
     lastTs = 0
     now = None
     msgCount = 0
-    rangeNames = screen.rangeNames()
     tracks = {}
     while running:
+        if screen.eventHandler():
+            running = False
+            continue
         ts = os.stat(aircraftFile).st_mtime
         print("TS: ", ts)
         while ts == lastTs:
@@ -107,14 +109,11 @@ def run(options):
                 logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
-        if False:
-            #### FIXME
-            r = 0
-            screen.selectRange(rangeNames[r])
         azimuth = compass.getAzimuth()
         selfLocation = gps.currentLocation()
         logging.debug(f"Self: azimuth={azimuth}, location={selfLocation}")
         screen.render(azimuth, selfLocation, tracks)
+    screen.quit()
     print("DONE")
     return 0
 
