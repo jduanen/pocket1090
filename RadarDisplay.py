@@ -180,7 +180,7 @@ class RadarDisplay():
         textRect.midtop = (position[0], (position[1] + 7))
         self.surface.blit(text, textRect)
 
-        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if symbolName in ("?", "A0") else symbol
+        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if symbolName not in ("?", "A0") else symbol
         self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
                               (position[1] - (s.get_height() / 2))))
 
