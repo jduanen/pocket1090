@@ -17,12 +17,24 @@ from __init__ import * #### FIXME
 
 DEF_DISPLAY_DIAMETER = 480
 
-DEF_RANGE_NAME = "mid"
+DEF_RANGE_NUM = 5
 DEF_BACKGROUND_COLOR = (32, 32, 32)
 DEF_RANGE_RING_COLOR = (255, 255, 0)
-DEF_FONT_COLOR = (240, 0, 240)
+DEF_RING_FONT_COLOR = (240, 0, 240)
+DEF_TRACK_FONT_COLOR = (0, 240, 0)
+DEF_VECTOR_COLOR = (0, 240, 0)
+DEF_TRAIL_COLOR = (0, 240, 0)
+DEF_SELF_COLOR = (255, 0, 0)
+DEF_COLORS = {
+    'bgColor': DEF_BACKGROUND_COLOR,
+    'ringColor': DEF_RANGE_RING_COLOR,
+    'ringFontColor': DEF_RING_FONT_COLOR,
+    'trackFontColor': DEF_TRACK_FONT_COLOR,
+    'vectorColor': DEF_VECTOR_COLOR,
+    'trailColor': DEF_TRAIL_COLOR,
+    'selfColor': DEF_SELF_COLOR
+}
 FONT_SIZE = 10
-SELF_COLOR = (255, 0, 0)
 MAX_SYMBOL_SIZE = 5
 TRACKED_CATEGORIES = ("A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "?")
 
@@ -31,20 +43,28 @@ Ring = namedtuple("Ring", "radius km")
 
 
 class RadarDisplay():
-    def __init__(self, diameter=DEF_DISPLAY_DIAMETER, rangeName=DEF_RANGE_NAME, bgColor=DEF_BACKGROUND_COLOR, ringColor=DEF_RANGE_RING_COLOR, fontColor=DEF_FONT_COLOR):
-        #### TODO consider switching to **kwargs
+    def __init__(self, diameter=DEF_DISPLAY_DIAMETER, rangeNumber=DEF_RANGE_NUM, colors=DEF_COLORS, verbose=False):
         self.diameter = diameter
-        self.bgColor = bgColor
-        self.ringColor = ringColor
-        self.fontColor = fontColor
+        self.rangeNumber = rangeNumber
+        self.bgColor = colors['bgColor']
+        self.ringColor = colors['ringColor']
+        self.ringFontColor = colors['ringFontColor']
+        self.trackFontColor = colors['trackFontColor']
+        self.vectorColor = colors['vectorColor']
+        self.trailColor = colors['trailColor']
+        self.selfColor = colors['selfColor']
+        self.verbose = verbose
 
         self.center = Coordinate((diameter / 2), (diameter / 2))
-        self.rings = {
-            'near': (Ring((self.diameter / 8), 0.25), Ring((self.diameter / 4), 0.5), Ring((self.diameter / 2), 1.0)),
-            'mid': (Ring((self.diameter / 8), 1.0), Ring((self.diameter / 4), 2.0), Ring((self.diameter / 2), 4.0)),
-            'far': (Ring((self.diameter / 8), 4.0), Ring((self.diameter / 4), 8.0), Ring((self.diameter / 2), 16.0)),
-            'max': (Ring((self.diameter / 16), 4.0), Ring((self.diameter / 8), 8.0), Ring((self.diameter / 4), 16.0), Ring((self.diameter / 2), 32.0))
-        }
+        self.rings = [
+            (Ring((self.diameter / 16), 0.25), Ring((self.diameter / 8), 0.5), Ring((self.diameter / 4), 1.0), Ring((self.diameter / 2), 2.0)),
+            (Ring((self.diameter / 16), 0.5), Ring((self.diameter / 8), 1.0), Ring((self.diameter / 4), 2.0), Ring((self.diameter / 2), 4.0)),
+            (Ring((self.diameter / 16), 1.0), Ring((self.diameter / 8), 2.0), Ring((self.diameter / 4), 4.0), Ring((self.diameter / 2), 8.0)),
+            (Ring((self.diameter / 16), 2.0), Ring((self.diameter / 8), 4.0), Ring((self.diameter / 4), 8.0), Ring((self.diameter / 2), 16.0)),
+            (Ring((self.diameter / 16), 4.0), Ring((self.diameter / 8), 8.0), Ring((self.diameter / 4), 16.0), Ring((self.diameter / ((2 * 32) / 24)), 24.0), Ring((self.diameter / 2), 32.0)),
+            (Ring((self.diameter / 16), 8.0), Ring((self.diameter / 8), 16.0), Ring((self.diameter / 4), 32.0), Ring((self.diameter / ((2 * 64) / 48)), 48.0), Ring((self.diameter / 2), 64.0)),
+            (Ring((self.diameter / 16), 16.0), Ring((self.diameter / 8), 32.0), Ring((self.diameter / 4), 64.0), Ring((self.diameter / ((2 * 128) / 96)), 96.0), Ring((self.diameter / 2), 128.0))
+        ]
 
         pygame.init()
         pygame.font.init()
@@ -58,30 +78,28 @@ class RadarDisplay():
         self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
 
         self.rotation = 0
-        self.selectRange(rangeName)
+        self.selectedRange = rangeNumber
+        self.rangeSpec = self.rings[rangeNumber]
+        self.rangeRings = self._createRangeRings()
         self.selfSymbol = self._createSelfSymbol()
         self.symbols = self._createSymbols()
 
         self._initScreen()
 
-    def _calcPixelAddr(self, selfLocation, trackLocation):
+    def _calcPixelAddr(self, dist, bearing):
         """Map the given a location (lat,lon) calculate and return the screen
             position (x,y) for the current display size and range selection
           #### TODO
           assumes trackLocation isn't off the screen
         """
-#        latDist = distance.distance(location, (track.latitude, location.longitude)).km
-#        lonDist = distance.distance(location, (location.latitude, track.longitude)).km
         metersPerPixel = (self.rangeSpec[-1].km * 1000) / self.diameter
-        dist, bearing = distanceBearing(selfLocation, trackLocation)
-        print(f"Dist: {dist:.2f}, Bearing: {bearing:.2f}")
+        if self.verbose:
+            print(f"      Dist: {dist:.2f}, Bearing: {bearing:.2f}\n")
         distPx = (dist * 1000) / metersPerPixel
         x = (distPx * math.sin(math.radians(bearing))) + (self.diameter / 2)
         y = -(distPx * math.cos(math.radians(bearing))) + (self.diameter / 2)
-        print(f"DistPx: {distPx}, X:{x}, Y:{y}")
         return (x, y)
 
-    #### TODO if no speed, use min-length vector on symbol, come up with (display-size-independent) mapping from speed to vector length
     def _createSymbols(self):
         """Draw all symbols
           #### TODO
@@ -89,33 +107,69 @@ class RadarDisplay():
         delta = MAX_SYMBOL_SIZE
         symbols = {}
         for cat in TRACKED_CATEGORIES:
+            #### TODO load bitmaps from files
+            filePath = f"assets/{cat}.png" if cat != "?" else "assets/unk.png"
+            img = pygame.image.load(filePath)
+            surface = pygame.Surface(img.get_size())
+            surface.fill(self.bgColor)
+            surface.set_colorkey(self.bgColor)
+            surface.blit(img, (0,0))
+            symbols[cat] = surface
+            '''
             s = pygame.Surface((delta, delta))
             s.fill(self.bgColor)
             s.set_colorkey(self.bgColor)
-            #### TODO load bitmaps from files
-            pygame.draw.circle(s, (0, 240, 0), ((delta / 2), (delta / 2)), delta)
+
+            pygame.draw.circle(s, self.vectorColor, ((delta / 2), (delta / 2)), delta) #### TMP TMP TMP
             symbols[cat] = s
+            '''
         return symbols
 
-    def _renderSymbol(self, selfLocation, trackLocation, symbolName, flight, altitude, speed, heading):
+    def _renderSymbol(self, selfLocation, trackLocation, symbolName, flight, altitude, speed, heading, trail=False):
         """Render the named symbol at the given coordinate, with the appropriately sized speed and heading vector
           If symbolName is None, then use the unknown symbol
           If speed is None, use a min-length vector
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
-        #### TODO add speed vector
-        #### TODO add text -- flight, altitude
         #### TODO create and use bitmap files for A[0-7] and ? categories
         #### TODO age symbols by changing alpha value with seen times ?
-        s = self.symbols[symbolName]
-        dist = distance.distance(selfLocation, trackLocation).km
+        #### TODO add trails
+        symbol = self.symbols[symbolName]
+        dist, bearing = distanceBearing(selfLocation, trackLocation)
         if dist > self.rangeSpec[-1].km:
             logging.info(f"Track '{flight}' out of range: {dist}")
             return
-        position = self._calcPixelAddr(selfLocation, trackLocation)
-        print(f"Render: {symbolName} @ {trackLocation} = {position}")
-        self.surface.blit(s, position)
+        position = self._calcPixelAddr(dist, bearing)
+
+        angle = 0
+        if heading:
+            startPt = pygame.math.Vector2(position)
+            length = (5 + (speed / 10))
+            angle = ((heading + 270) % 360)
+            endPt = pygame.math.Vector2(startPt + pygame.math.Vector2(length, 0).rotate(angle))
+            pygame.draw.line(self.surface, self.vectorColor, startPt, endPt, 1)
+
+        text = self.font.render(f"{flight}", True, self.trackFontColor, self.bgColor)
+        text.set_colorkey(self.bgColor)
+        textRect = text.get_rect()
+        textRect.midbottom = (position[0], (position[1] - 3))
+        self.surface.blit(text, textRect)
+
+        text = self.font.render(f"{altitude}", True, self.trackFontColor, self.bgColor)
+        text.set_colorkey(self.bgColor)
+        textRect = text.get_rect()
+        textRect.midtop = (position[0], (position[1] + 7))
+        self.surface.blit(text, textRect)
+
+        '''
+        s = pygame.transform.rotate(symbol, angle)
+        self.surface.blit(s, ((self.center.x - (s.get_width() / 2)),
+                              (self.center.y - (s.get_height() / 2))))
+        self.surface.blit(symbol, (position[0], position[1]))
+        '''
+        self.surface.blit(symbol, ((position[0] - (symbol.get_width() / 2)),
+                                   (position[1] - (symbol.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -124,10 +178,11 @@ class RadarDisplay():
         selfSymbol = pygame.Surface(((2 * delta), (2 * delta)))
         selfSymbol.fill(self.bgColor)
         selfSymbol.set_colorkey(self.bgColor)
-        pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), (delta, (2 * delta)))
-        pygame.draw.line(selfSymbol, SELF_COLOR, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
-        pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), ((0.5 * delta), (0.5 * delta)))
-        pygame.draw.line(selfSymbol, SELF_COLOR, (delta, 0), ((1.5 * delta), (0.5 * delta)))
+        #### TODO replace this with a bitmap file glyph
+        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), (delta, (2 * delta)))
+        pygame.draw.line(selfSymbol, self.selfColor, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
+        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((0.5 * delta), (0.5 * delta)))
+        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((1.5 * delta), (0.5 * delta)))
         return selfSymbol
 
     def _renderSelfSymbol(self):
@@ -145,7 +200,7 @@ class RadarDisplay():
         for ring in self.rangeSpec:
             pygame.draw.circle(rangeRings, self.ringColor, astuple(self.center), ring.radius, 1)
 
-            text = self.font.render(f"{ring.km}km", True, self.fontColor, self.bgColor)
+            text = self.font.render(f"{ring.km / 2}km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
             textRect.center = (self.center.x, (self.center.y - ring.radius + (textRect.h / 2)))
             rangeRings.blit(text, textRect)
@@ -166,17 +221,34 @@ class RadarDisplay():
         self._renderSelfSymbol()
         self._renderRangeRings()
 
-    def rangeNames(self):
-        """Return a list of the names of selectable ranges
+    def numberRanges(self):
+        """Return the number of selectable ranges
           #### TODO
         """
-        return list(self.rings.keys())
+        return len(self.rings)
 
-    def selectRange(self, rangeName):
+    def rangeUp(self):
+        """Select the next larger range setting
+          #### TODO
+        """
+        self.selectRange(self.selectedRange + 1)
+
+    def rangeDown(self):
+        """Select the next smaller range setting
+          #### TODO
+        """
+        self.selectRange(self.selectedRange - 1)
+
+    def selectRange(self, rangeNumber):
         """Select the scale of the display and create the associated labeled range rings
           #### TODO
         """
-        self.rangeSpec = self.rings[rangeName]
+        rangeNumber = rangeNumber if rangeNumber >= 0 else 0
+        rangeNumber = rangeNumber if rangeNumber < len(self.rings) else (len(self.rings) - 1)
+        if rangeNumber == self.selectedRange:
+            return
+        self.selectedRange = rangeNumber
+        self.rangeSpec = self.rings[rangeNumber]
         self.rangeRings = self._createRangeRings()
 
     def render(self, rotation, selfLocation, tracks):
@@ -187,7 +259,103 @@ class RadarDisplay():
         self._initScreen()
         for uid, track in tracks.items():
             trackLocation = Point(track.lat, track.lon)
-            print(f"Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
-            print(track)
+            if self.verbose:
+                print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
+                print(f"    {track}")
             self._renderSymbol(selfLocation, trackLocation, track.category, track.flightNumber, track.altitude, track.speed, track.heading)
         pygame.display.flip()
+
+    def eventHandler(self):
+        """#### TODO
+        """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.quit()
+                return True
+            if event.type == KEYDOWN:
+                if event.key == K_LEFT:
+                    print("pressed LEFT")
+                elif event.key == K_RIGHT:
+                    print("pressed RIGHT")
+                elif event.key == K_UP:
+                    self.rangeUp()
+                elif event.key == K_DOWN:
+                    self.rangeDown()
+                elif event.key == K_LCTRL:
+                    print("L-CTRL")
+                elif event.key == K_BACKSPACE:
+                    print("BS")
+            if event.type == KEYUP:
+            if event.key == K_LEFT:
+                    print("released LEFT")
+                elif event.key == K_RIGHT:
+                    print("released RIGHT")
+                elif event.key == K_UP:
+                    pass
+                elif event.key == K_DOWN:
+                    pass
+        return False
+
+    def quit(self):
+        pygame.quit()
+
+'''
+def draw_dashed_line(surf, color, p1, p2, prev_line_len, dash_length=8):
+    dx, dy = p2[0]-p1[0], p2[1]-p1[1]
+    if dx == 0 and dy == 0:
+        return 
+    dist = math.hypot(dx, dy)
+    dx /= dist
+    dy /= dist
+
+    step = dash_length*2
+    start = (int(prev_line_len) // step) * step
+    end = (int(prev_line_len + dist) // step + 1) * step
+    for i in range(start, end, dash_length*2):
+        s = max(0, start - prev_line_len)
+        e = min(start - prev_line_len + dash_length, dist)
+        if s < e:
+            ps = p1[0] + dx * s, p1[1] + dy * s 
+            pe = p1[0] + dx * e, p1[1] + dy * e 
+            pygame.draw.line(surf, color, pe, ps)
+
+def draw_dashed_lines(surf, color, points, dash_length=8):
+    line_len = 0
+    for i in range(1, len(points)):
+        p1, p2 = points[i-1], points[i]
+        dist = math.hypot(p2[0]-p1[0], p2[1]-p1[1])
+        draw_dashed_line(surf, color, p1, p2, line_len, dash_length)
+        line_len += dist
+
+def draw_dashed_line(surf, color, start_pos, end_pos, width=1, dash_length=10):
+    origin = Point(start_pos)
+    target = Point(end_pos)
+    displacement = target - origin
+    length = len(displacement)
+    slope = displacement/length
+
+    for index in range(0, length/dash_length, 2):
+        start = origin + (slope *    index    * dash_length)
+        end   = origin + (slope * (index + 1) * dash_length)
+        pygame.draw.line(surf, color, start.get(), end.get(), width)
+
+
+def draw_line_dashed(surface, color, start_pos, end_pos, width = 1, dash_length = 10, exclude_corners = True):
+
+    # convert tuples to numpy arrays
+    start_pos = np.array(start_pos)
+    end_pos   = np.array(end_pos)
+
+    # get euclidian distance between start_pos and end_pos
+    length = np.linalg.norm(end_pos - start_pos)
+
+    # get amount of pieces that line will be split up in (half of it are amount of dashes)
+    dash_amount = int(length / dash_length)
+
+    # x-y-value-pairs of where dashes start (and on next, will end)
+    dash_knots = np.array([np.linspace(start_pos[i], end_pos[i], dash_amount) for i in range(2)]).transpose()
+
+    return [pg.draw.line(surface, color, tuple(dash_knots[n]), tuple(dash_knots[n+1]), width)
+            for n in range(int(exclude_corners), dash_amount - int(exclude_corners), 2)]
+
+'''
