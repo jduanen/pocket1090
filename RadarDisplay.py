@@ -107,22 +107,28 @@ class RadarDisplay():
         delta = MAX_SYMBOL_SIZE
         symbols = {}
         for cat in TRACKED_CATEGORIES:
-            #### TODO load bitmaps from files
-            filePath = f"assets/{cat}.png" if cat != "?" else "assets/unk.png"
-            img = pygame.image.load(filePath)
+            if cat == "?":
+                diameter = 9
+                s = pygame.Surface((diameter, diameter))
+                s.fill(self.bgColor)
+                s.set_colorkey(self.bgColor)
+                pygame.draw.circle(s, (0, 148, 255), ((diameter / 2), (diameter / 2)), (diameter / 2))
+                symbols[cat] = s
+                continue
+            if cat == "A0":
+                diameter = 9
+                s = pygame.Surface((diameter, diameter))
+                s.fill(self.bgColor)
+                s.set_colorkey(self.bgColor)
+                pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
+                symbols[cat] = s
+                continue
+            img = pygame.image.load(f"assets/{cat}.png")
             surface = pygame.Surface(img.get_size())
             surface.fill(self.bgColor)
             surface.set_colorkey(self.bgColor)
             surface.blit(img, (0,0))
             symbols[cat] = surface
-            '''
-            s = pygame.Surface((delta, delta))
-            s.fill(self.bgColor)
-            s.set_colorkey(self.bgColor)
-
-            pygame.draw.circle(s, self.vectorColor, ((delta / 2), (delta / 2)), delta) #### TMP TMP TMP
-            symbols[cat] = s
-            '''
         return symbols
 
     def _renderSymbol(self, selfLocation, trackLocation, symbolName, flight, altitude, speed, heading, trail=False):
@@ -132,11 +138,21 @@ class RadarDisplay():
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
+        #### TODO implement GPS function with real HW
+        #### TODO implement compass function with real HW
+        #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
+        #### TODO improve all the colors -- less primary
         #### TODO fix rotation of symbol to match vector
         #### TODO use fewer shapes, change size of common shapes, use color to show main types
+        ####    A0-2: one color, three sizes
+        ####    A3-5: another color, three sizes
+        ####    A6: different color yet and distinctive shape
+        ####    A7: rotary state
+        ####    unk: round, basic color (green)
         #### TODO use color codes and improve shapes of symbols
         #### TODO age symbols by changing alpha value with seen times ?
         #### TODO add trails
+        print(f"ZZZZ: {symbolName}")
         symbol = self.symbols[symbolName]
         dist, bearing = distanceBearing(selfLocation, trackLocation)
         if dist > self.rangeSpec[-1].km:
@@ -155,7 +171,7 @@ class RadarDisplay():
         text = self.font.render(f"{flight}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
-        textRect.midbottom = (position[0], (position[1] - 3))
+        textRect.midbottom = (position[0], (position[1] - 5))
         self.surface.blit(text, textRect)
 
         text = self.font.render(f"{altitude}", True, self.trackFontColor, self.bgColor)
@@ -164,7 +180,7 @@ class RadarDisplay():
         textRect.midtop = (position[0], (position[1] + 7))
         self.surface.blit(text, textRect)
 
-        s = pygame.transform.rotate(symbol, ((angle + 180) % 360))
+        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if symbolName in ("?", "A0") else symbol
         self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
                               (position[1] - (s.get_height() / 2))))
 
