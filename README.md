@@ -5,8 +5,13 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 ## Desktop version Screenshots
 
+### Max Range
 ![Desktop Display 1](screen1.png)
+
+### Mid Range, Trails On
 ![Desktop Display 2](screen2.png)
+
+### Max Range, Trails On
 ![Desktop Display 3](screen3.png)
 
 
