@@ -6,6 +6,8 @@
 
 from dataclasses import dataclass
 
+from geopy import Point
+
 from __init__ import * #### FIXME
 
 
@@ -27,6 +29,7 @@ class TrackSpec():
     seen: float         # seen: how many seconds before "now" a message was last received from this aircraft
     rssi: float         # rssi: recent average RSSI (in dbFS); this will always be negative
     timestamp: float    # when the aircraft.json file was written (in Unix epoch time)
+    location: (float,float) # (lat, lon) tuple as a geopy Point object
 
 
 class Track():
@@ -45,7 +48,6 @@ class Track():
     def update(self, timestamp, **kwargs):
         """#### TODO
         """
-        #### TODO fix TRACK_DEFS and use it for better defaults
         self.uniqueId = kwargs.get('hex', TRACK_DEFS['hex'])
         self.flightNumber = kwargs.get('flight', TRACK_DEFS['flight'])
         self.altitude = kwargs.get('alt_geom', TRACK_DEFS['alt_geom'])
@@ -58,13 +60,14 @@ class Track():
         self.seen = kwargs.get('seen', TRACK_DEFS['seen'])
         self.rssi = kwargs.get('rssi', TRACK_DEFS['rssi'])
         self.timestamp = timestamp
+        self.location = Point(self.lat, self.lon)
 
         if self.currentTrack:
             self.history.append(self.currentTrack)
         self.currentTrack = TrackSpec(self.uniqueId, self.flightNumber, self.altitude,
                                       self.speed, self.heading, self.category, self.lat,
                                       self.lon, self.seenPos, self.seen, self.rssi,
-                                      self.timestamp)
+                                      self.timestamp, self.location)
 
     def currentTrack(self):
         """#### TODO
