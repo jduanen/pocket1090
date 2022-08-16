@@ -8,7 +8,6 @@ from collections import namedtuple
 from dataclasses import astuple
 import logging
 
-from geopy import Point
 import pygame
 from pygame.locals import *
 
@@ -23,7 +22,7 @@ DEF_RANGE_RING_COLOR = (255, 255, 0)
 DEF_RING_FONT_COLOR = (240, 0, 240)
 DEF_TRACK_FONT_COLOR = (0, 240, 0)
 DEF_VECTOR_COLOR = (0, 240, 0)
-DEF_TRAIL_COLOR = (0, 240, 0)
+DEF_TRAIL_COLOR = (128, 128, 128)
 DEF_SELF_COLOR = (255, 0, 0)
 DEF_COLORS = {
     'bgColor': DEF_BACKGROUND_COLOR,
@@ -36,7 +35,8 @@ DEF_COLORS = {
 }
 FONT_SIZE = 10
 MAX_SYMBOL_SIZE = 5
-TRACKED_CATEGORIES = ("A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "?")
+TRACKED_CATEGORIES = ("A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "B6", "?")
+DO_NOT_ROTATE = ("?", "A0", "A7", "B6")
 
 
 Ring = namedtuple("Ring", "radius km")
@@ -65,6 +65,7 @@ class RadarDisplay():
             (Ring((self.diameter / 16), 8.0), Ring((self.diameter / 8), 16.0), Ring((self.diameter / 4), 32.0), Ring((self.diameter / ((2 * 64) / 48)), 48.0), Ring((self.diameter / 2), 64.0)),
             (Ring((self.diameter / 16), 16.0), Ring((self.diameter / 8), 32.0), Ring((self.diameter / 4), 64.0), Ring((self.diameter / ((2 * 128) / 96)), 96.0), Ring((self.diameter / 2), 128.0))
         ]
+        self.trails = 0
 
         pygame.init()
         pygame.font.init()
@@ -93,7 +94,7 @@ class RadarDisplay():
           assumes trackLocation isn't off the screen
         """
         metersPerPixel = (self.rangeSpec[-1].km * 1000) / self.diameter
-        if self.verbose:
+        if self.verbose > 1:
             print(f"      Dist: {dist:.2f}, Bearing: {bearing:.2f}\n")
         distPx = (dist * 1000) / metersPerPixel
         x = (distPx * math.sin(math.radians(bearing))) + (self.diameter / 2)
@@ -123,6 +124,14 @@ class RadarDisplay():
                 pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
                 symbols[cat] = s
                 continue
+            if cat.startswith("B"):
+                dim = 8
+                s = pygame.Surface((dim, dim))
+                s.fill(self.bgColor)
+                s.set_colorkey(self.bgColor)
+                pygame.draw.rect(s, (165, 255, 127), (0, 0, dim, dim))
+                symbols[cat] = s
+                continue
             img = pygame.image.load(f"assets/{cat}.png")
             surface = pygame.Surface(img.get_size())
             surface.fill(self.bgColor)
@@ -131,56 +140,71 @@ class RadarDisplay():
             symbols[cat] = surface
         return symbols
 
-    def _renderSymbol(self, selfLocation, trackLocation, symbolName, flight, altitude, speed, heading, trail=False):
+    def _calcPixelCoordinates(self, selfPoint, targetPoint):
+        dist, bearing = distanceBearing(selfPoint, targetPoint)
+        return self._calcPixelAddr(dist, bearing)
+
+    def _renderSymbol(self, track, selfLocation, trackLocation, trail=0):
         """Render the named symbol at the given coordinate, with the appropriately sized speed and heading vector
           If symbolName is None, then use the unknown symbol
           If speed is None, use a min-length vector
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
+        #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
+        #### FIXME make trail controls go from no trails, to longer/shorter ones with L/R arrow keys
+        #### FIXME improve the symbols -- bigger, more colors?
+        #### FIXME make rotation of symbol match vector
+        #### TODO consider scaling symbols with range?
+        #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
+        #### TODO include symbols for all categories -- i.e., [A-D][0-7]
+        #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
+        #### TODO age symbols by changing alpha value with seen times ?
+        #### TODO port to RasPi
         #### TODO implement GPS function with real HW
         #### TODO implement compass function with real HW
-        #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
-        #### TODO improve all the colors -- less primary
-        #### TODO fix rotation of symbol to match vector
-        #### TODO use fewer shapes, change size of common shapes, use color to show main types
-        ####    A0-2: one color, three sizes
-        ####    A3-5: another color, three sizes
-        ####    A6: different color yet and distinctive shape
-        ####    A7: rotary state
-        ####    unk: round, basic color (green)
-        #### TODO use color codes and improve shapes of symbols
-        #### TODO age symbols by changing alpha value with seen times ?
-        #### TODO add trails
-        print(f"ZZZZ: {symbolName}")
-        symbol = self.symbols[symbolName]
+        print(f"Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
+        symbol = self.symbols[track.category]
         dist, bearing = distanceBearing(selfLocation, trackLocation)
         if dist > self.rangeSpec[-1].km:
-            logging.info(f"Track '{flight}' out of range: {dist}")
+            logging.info(f"Track '{track.flightNumber}' out of range: {dist}")
             return
         position = self._calcPixelAddr(dist, bearing)
 
+        if trail:
+            points = [t.location for n,t in enumerate(track.history) if ((n < 1) or (t.location != track.history[n - 1].location))]
+            '''
+            for n, t in enumerate(track.history):
+                pass
+                ##print(f"XXXX: {n}, {t.location.latitude, t.location.longitude}, {track.history[n - 1].location.latitude, track.history[n - 1].location.longitude}, {(n < 1) or (t.location != track.history[n - 1].location)}")
+            print(f"Track: {track.flightNumber}, History: {points}")
+            '''
+            for pt in points:
+                x, y = self._calcPixelCoordinates(selfLocation, pt)
+                #### FIXME try a 1x1 or 2x2 rectangle instead
+                pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
+
         angle = 0
-        if heading:
+        if track.heading:
             startPt = pygame.math.Vector2(position)
-            length = (5 + (speed / 10))
-            angle = ((heading + 270) % 360)
+            length = (5 + (track.speed / 10))
+            angle = ((track.heading + 270) % 360)
             endPt = pygame.math.Vector2(startPt + pygame.math.Vector2(length, 0).rotate(angle))
             pygame.draw.line(self.surface, self.vectorColor, startPt, endPt, 1)
 
-        text = self.font.render(f"{flight}", True, self.trackFontColor, self.bgColor)
+        text = self.font.render(f"{track.flightNumber}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midbottom = (position[0], (position[1] - 5))
         self.surface.blit(text, textRect)
 
-        text = self.font.render(f"{altitude}", True, self.trackFontColor, self.bgColor)
+        text = self.font.render(f"{track.altitude}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midtop = (position[0], (position[1] + 7))
         self.surface.blit(text, textRect)
 
-        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if symbolName not in ("?", "A0") else symbol
+        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category not in DO_NOT_ROTATE else symbol
         self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
                               (position[1] - (s.get_height() / 2))))
 
@@ -264,18 +288,34 @@ class RadarDisplay():
         self.rangeSpec = self.rings[rangeNumber]
         self.rangeRings = self._createRangeRings()
 
+    def trailsLess(self):
+        """ #### TODO
+        """
+        if self.trails > 0:
+            self.trails -= 1
+
+    def trailsMore(self):
+        """ #### TODO
+        """
+        self.trails += 1
+
+    def trailsReset(self):
+        """ #### TODO
+        """
+        self.trails = 0
+
     def render(self, rotation, selfLocation, tracks):
         """Render the screen with the given rotation and location
           #### TODO
         """
+        #### TODO implement per-track trails, for now do them all the same
         self.rotation = rotation
         self._initScreen()
         for uid, track in tracks.items():
-            trackLocation = Point(track.lat, track.lon)
             if self.verbose:
                 print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
                 print(f"    {track}")
-            self._renderSymbol(selfLocation, trackLocation, track.category, track.flightNumber, track.altitude, track.speed, track.heading)
+            self._renderSymbol(track, selfLocation, track.location, self.trails)
         pygame.display.flip()
 
     def eventHandler(self):
@@ -287,9 +327,9 @@ class RadarDisplay():
                 return True
             if event.type == KEYDOWN:
                 if event.key == K_LEFT:
-                    print("pressed LEFT")
+                    self.trailsLess()
                 elif event.key == K_RIGHT:
-                    print("pressed RIGHT")
+                    self.trailsMore()
                 elif event.key == K_UP:
                     self.rangeUp()
                 elif event.key == K_DOWN:
@@ -297,12 +337,12 @@ class RadarDisplay():
                 elif event.key == K_LCTRL:
                     print("L-CTRL")
                 elif event.key == K_BACKSPACE:
-                    print("BS")
+                    self.trailsReset()
             if event.type == KEYUP:
                 if event.key == K_LEFT:
-                    print("released LEFT")
+                    pass
                 elif event.key == K_RIGHT:
-                    print("released RIGHT")
+                    pass
                 elif event.key == K_UP:
                     pass
                 elif event.key == K_DOWN:
