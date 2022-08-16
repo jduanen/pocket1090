@@ -15,6 +15,29 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * ICAO address: 24b unique address, programmed at installation (like a MAC address?)
 * in UAT Anonymous Mode, may not send ICAO address
 
+#### Interesting Events Captured So Far
+ * statistics
+   - captured over four days
+   - 52601 samples
+   - 219 uniqueIds
+* Categories
+  - A[0-7]
+  - B[1,2,4,6,7]
+  - C[0-7]
+  - D[1,2,7]
+* Emergency/priority
+  - no communications (7600)
+  - lifeguard / medical emergency
+* Groundspeed
+  - min: 9.9 kt
+  - max: 571.4 kt
+* Baro altitude
+  - min: -925 ft
+  - max: 126700 ft
+* RSSI
+  - min: -20.3
+  - max: -2.0
+
 ## Design Notes
 * use dump1090-fa to emit json files, generate console display using matplotlib
 * Main HW Components
@@ -44,5 +67,9 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * set alarms -- things to watch for
   - e.g., specific planes, specific types of planes, specific metrics?
 
+--------------
+
+* egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
+  - Avg RSSI: -10.8692 dBFS
 
 
