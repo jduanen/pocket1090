@@ -3,6 +3,13 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 **WIP**
 
+## Desktop version Screenshots
+
+![Desktop Display 1](screen1.png)
+![Desktop Display 2](screen2.png)
+![Desktop Display 3](screen3.png)
+
+
 ## Automatic Dependent Surveillance-Broadcast (ADS-B) Notes
 * 1090MHz: Mode-A/C/S transponder
   - additional information (i.e., "extended squitter" message) aka 1090ES
