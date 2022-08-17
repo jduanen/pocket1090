@@ -162,7 +162,6 @@ class RadarDisplay():
         #### TODO make auto-range mode (enable/disable) -- reduce to smallest range that includes all current tracks
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
         #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
-        #### FIXME make trail controls go from no trails, to longer/shorter ones with L/R arrow keys
         #### FIXME improve the symbols -- bigger, more colors?
         #### FIXME make rotation of symbol match vector
         #### TODO consider scaling symbols with range?
@@ -181,14 +180,6 @@ class RadarDisplay():
             return
         position = self._calcPixelAddr(dist, bearing)
 
-        '''
-        if trail:
-            points = [t.location for n,t in enumerate(track.history) if ((n < 1) or (t.location != track.history[n - 1].location))]
-            for n, t in enumerate(track.history):
-                pass
-                ##print(f"XXXX: {n}, {t.location.latitude, t.location.longitude}, {track.history[n - 1].location.latitude, track.history[n - 1].location.longitude}, {(n < 1) or (t.location != track.history[n - 1].location)}")
-            print(f"Track: {track.flightNumber}, History: {points}")
-        '''
         points = track.trackHistory(self.trails)
         for pt in points:
             x, y = self._calcPixelCoordinates(selfLocation, pt)
