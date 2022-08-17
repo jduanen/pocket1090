@@ -7,6 +7,7 @@
 from collections import namedtuple
 from dataclasses import astuple
 import logging
+import os
 
 import pygame
 from pygame.locals import *
@@ -35,7 +36,8 @@ DEF_COLORS = {
 }
 FONT_SIZE = 10
 MAX_SYMBOL_SIZE = 5
-TRACKED_CATEGORIES = ("A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "B6", "?")
+ALL_CATEGORIES = (f"{letter}{number}" for letter in ("A", "B", "C", "D", "E") for number in range(8))
+TRACKED_CATEGORIES = (*ALL_CATEGORIES, "?")
 DO_NOT_ROTATE = ("?", "A0", "A7", "B6")
 
 
@@ -43,7 +45,7 @@ Ring = namedtuple("Ring", "radius km")
 
 
 class RadarDisplay():
-    def __init__(self, diameter=DEF_DISPLAY_DIAMETER, rangeNumber=DEF_RANGE_NUM, colors=DEF_COLORS, verbose=False):
+    def __init__(self, diameter=DEF_DISPLAY_DIAMETER, rangeNumber=DEF_RANGE_NUM, colors=DEF_COLORS, fullScreen=False, verbose=False):
         self.diameter = diameter
         self.rangeNumber = rangeNumber
         self.bgColor = colors['bgColor']
@@ -53,6 +55,7 @@ class RadarDisplay():
         self.vectorColor = colors['vectorColor']
         self.trailColor = colors['trailColor']
         self.selfColor = colors['selfColor']
+        self.fullScreen = fullScreen
         self.verbose = verbose
 
         self.center = Coordinate((diameter / 2), (diameter / 2))
@@ -74,7 +77,10 @@ class RadarDisplay():
             print(f"\nFonts: {pygame.font.get_default_font()}\n")
         if False:
             print(f"\nDisplay: \n{pygame.display.Info()}\n{pygame.display.get_driver()} {pygame.display.list_modes()}\n")
-        self.surface = pygame.display.set_mode((self.diameter, self.diameter), DOUBLEBUF)
+        flags = DOUBLEBUF
+        if fullScreen:
+            flags |= FULLSCREEN
+        self.surface = pygame.display.set_mode((self.diameter, self.diameter), flags)
         pygame.display.set_caption('Radar Display')
         self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
 
@@ -124,7 +130,9 @@ class RadarDisplay():
                 pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
                 symbols[cat] = s
                 continue
-            if cat.startswith("B"):
+            filePath = f"assets/{cat}.png"
+            if not os.path.exists(filePath):
+                #### FIXME
                 dim = 8
                 s = pygame.Surface((dim, dim))
                 s.fill(self.bgColor)
@@ -132,7 +140,7 @@ class RadarDisplay():
                 pygame.draw.rect(s, (165, 255, 127), (0, 0, dim, dim))
                 symbols[cat] = s
                 continue
-            img = pygame.image.load(f"assets/{cat}.png")
+            img = pygame.image.load(filePath)
             surface = pygame.Surface(img.get_size())
             surface.fill(self.bgColor)
             surface.set_colorkey(self.bgColor)
@@ -151,19 +159,21 @@ class RadarDisplay():
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
+        #### TODO make auto-range mode (enable/disable) -- reduce to smallest range that includes all current tracks
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
+        #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
         #### FIXME make trail controls go from no trails, to longer/shorter ones with L/R arrow keys
         #### FIXME improve the symbols -- bigger, more colors?
         #### FIXME make rotation of symbol match vector
         #### TODO consider scaling symbols with range?
-        #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
-        #### TODO include symbols for all categories -- i.e., [A-D][0-7]
-        #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
+        #### TODO track and include symbols for all categories -- i.e., [A-D][0-7]
         #### TODO age symbols by changing alpha value with seen times ?
+
+        #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
         #### TODO port to RasPi
         #### TODO implement GPS function with real HW
         #### TODO implement compass function with real HW
-        print(f"Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
+        ##print(f"      Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
         symbol = self.symbols[track.category]
         dist, bearing = distanceBearing(selfLocation, trackLocation)
         if dist > self.rangeSpec[-1].km:
@@ -313,8 +323,8 @@ class RadarDisplay():
         self._initScreen()
         for uid, track in tracks.items():
             if self.verbose:
-                print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
-                print(f"    {track}")
+                ##print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
+                print(track)
             self._renderSymbol(track, selfLocation, track.location, self.trails)
         pygame.display.flip()
 
@@ -338,6 +348,9 @@ class RadarDisplay():
                     print("L-CTRL")
                 elif event.key == K_BACKSPACE:
                     self.trailsReset()
+                elif event.key in (K_q, ):
+                    self.quit()
+                    return True
             if event.type == KEYUP:
                 if event.key == K_LEFT:
                     pass
