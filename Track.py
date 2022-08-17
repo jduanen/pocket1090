@@ -39,10 +39,63 @@ class Track():
         self.update(timestamp, **kwargs)
 
     def __repr__(self):
-        s = f"uniqueId: {self.uniqueId}, flightNumber: {self.flightNumber}"
-        s += f", altitude: {self.altitude}, speed: {self.speed}, heading: {self.heading}"
-        s += f", category: {self.category}, lat: {self.lat}, lon: {self.lon}"
-        s += f", seenPos: {self.seenPos}, seen: {self.seen}, rssi: {self.rssi}"
+        s = f"uniqueId: "
+        if self.uniqueId:
+            s += f"{self.uniqueId}"
+        else:
+            s += f"     ?"
+        s += f", flightNumber: "
+        if self.flightNumber:
+            s += f"{self.flightNumber: <8}"
+        else:
+            s += f"       ?"
+        s += f", altitude: "
+        if self.altitude:
+            s += f"{self.altitude: >6}"
+        else:
+            s += f"     ?"
+        s += f", speed: "
+        if self.speed:
+            s += f"{self.speed:5.1f}"
+        else:
+            s += f"    ?"
+        s += f", heading: "
+        if self.heading:
+            s += f"{self.heading:5.1f}"
+        else:
+            s += f"    ?"
+        s += f", category: "
+        if self.category:
+            s += f"{self.category: >2}"
+        else:
+            s += f" ?"
+        s += f", lat: "
+        if self.lat:
+            s += f"{self.lat:3.6f}"
+        else:
+            s += f"         ?"
+        s += f", lon: "
+        if self.lon:
+            s += f"{self.lon:3.6f}"
+        else:
+            s += f"         ?"
+        s += f", seenPos: "
+        if self.seenPos:
+            s += f"{self.seenPos:4.1f}"
+        else:
+            s += f"   ?"
+        s += f", seen: "
+        if self.seen:
+            s += f"{self.seen:4.1f}"
+        else:
+            s += f"   ?"
+        s += f", rssi: "
+        if self.rssi:
+            s += f"{self.rssi:5.1f}"
+        else:
+            s += f"   ?"
+        s += f", timestamp: {self.timestamp}"
+        s += f", location: {self.location}"
         return s
 
     def update(self, timestamp, **kwargs):
