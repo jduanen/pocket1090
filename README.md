@@ -14,6 +14,34 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 ### Max Range, Trails On
 ![Desktop Display 3](screen3.png)
 
+## Key Features
+
+### Range
+
+* Manual: increase/decrease range
+* Automatic: automatically select smallest range that includes all current tracks
+
+### Trails (i.e., position points)
+
+* show last 'N' position points (0 = no trails)
+
+### Aging
+
+* enable/disable fade-out with time since last seen
+
+### Focus
+
+* single track
+* additional information
+
+### Filters
+
+* inside/outside altitude/speed range
+* categories
+* flight number (prefix)
+* uniqueIds
+* greater-/less-than distance
+* heading
 
 ## Automatic Dependent Surveillance-Broadcast (ADS-B) Notes
 * 1090MHz: Mode-A/C/S transponder
@@ -55,7 +83,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * Main HW Components
   - LiPo battery, FlightAware Pro-Stick Plus, Raspi Zero, round LCD display with capacitive touchscreen and HDMI interface, external whip antenna, GPS receiver
 * Display features:
-  - annular rings indicating range (device is in the center)
+  - concentric rings indicating range (device is in the center)
   - selectable range (between some min/max values that make sense)
   - use NATO symbology? -- shape indicates type, vector indicates heading and speed, text for other values
   - touch icon to get additional info pop-up
@@ -78,6 +106,21 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - enable offline analysis or replay of tracks
 * set alarms -- things to watch for
   - e.g., specific planes, specific types of planes, specific metrics?
+
+### TODO
+
+* Figure out what kind of input device to use -- e.g., track point, touchscreen, shaft-encoder
+* Add UTC clock display (from GPS)
+* Include simplified map?
+* Change radar display if held vertically or horizontally?
+* Make sure all temp files are written to appropriate file system
+* adjust dump1090-fa so it generates output at appropriate intervals
+* indicate how many tracks are being filtered at any point in time?
+* add secondary display (small OLED) for additional information
+  - time (UTC) and location (lat/lon)
+  - summary of current tracks
+  - filtered tracks
+  - details of selected track
 
 --------------
 
