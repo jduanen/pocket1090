@@ -55,7 +55,7 @@ def run(options):
 
     gps = GPS()
     compass = Compass()
-    screen = RadarDisplay(rangeNumber=5, verbose=options.verbose)
+    screen = RadarDisplay(rangeNumber=5, fullScreen=options.fullScreen, verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
@@ -68,7 +68,8 @@ def run(options):
             running = False
             continue
         ts = os.stat(aircraftFile).st_mtime
-        print("TS: ", ts)
+        if options.verbose:
+            print("TS: ", ts)
         while ts == lastTs:
             ts = os.stat(aircraftFile).st_mtime
             time.sleep(0.5)
@@ -89,15 +90,17 @@ def run(options):
         ##logging.debug(f"Current number of aircraft: {len(aircraftInfo)}")
         if options.verbose:
             currentFlightNums = [a['flight'] for a in aircraftInfo.values() if 'flight' in a]
-            if currentFlightNums:
+            if currentFlightNums and options.verbose:
                 print(f"Flight #s: {currentFlightNums}")
 
         #### TODO detect "interesting" cases (e.g., emergency, other than "A?") and save them
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
         if emergencies:
+            #### TODO log these to a file
             print(f"\nEmergencies: {emergencies}\n")
         oddVehicles = {k: v for k, v in aircraftInfo.items() if not v.get('category', "A").startswith("A")}
         if oddVehicles:
+            #### TODO log these to a file
             print(f"\nUnusual Vehicles: {oddVehicles}\n")
 
         for uniqueId, info in aircraftInfo.items():
@@ -119,11 +122,14 @@ def run(options):
 
 
 def getOps():
-    usage = f"Usage: {sys.argv[0]} [-v] [-c <configFile>] [-L <logLevel>] [-l <logFile>] <path>"
+    usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>] [-l <logFile>] [-v] <path>"
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-c", "--configFile", action="store", type=str, default=DEF_CONFIG_FILE,
         help="Path to file with configuration information; will be created if doesn't exist")
+    ap.add_argument(
+        "-f", "--fullScreen", action="store_true", default=False,
+        help="Execute in full screen mode")
     ap.add_argument(
         "-L", "--logLevel", action="store", type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -179,6 +185,8 @@ def getOps():
 
     if opts.verbose:
         print(f"    JSON Files Path: {opts.path}")
+        if opts.fullScreen:
+            print(f"    Enable Full Screen Mode")
         print(f"    Log level:       {opts.config['logLevel']}")
         if opts.config['logFile']:
             print(f"    Logging to:      {opts.config['logFile']}")
