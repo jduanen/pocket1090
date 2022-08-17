@@ -127,7 +127,18 @@ class Track():
         """
         return self.currentTrack
 
-    def trackHistory(self):
-        """#### TODO
+    def trackHistory(self, depth, collapse=True):
+        """Return list of locations in order from newest to oldest, up to the
+            given depth (0 means none of them and None meals all of them),
+            skipping the current location and (optionally) collapsing identical
+            sequential locations into one location.
         """
-        return self.history
+        if depth == 0:
+            return []
+        numPts = depth if depth < (len(self.history) - 1) else -1
+
+        history = self.history[-2::-1]
+        if numPts > 0:
+            history = history[0:numPts]
+        points = [t.location for n,t in enumerate(history) if (((n < 1) or (t.location != history[n - 1].location)) or not collapse)]
+        return points[1:depth]

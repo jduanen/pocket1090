@@ -181,18 +181,19 @@ class RadarDisplay():
             return
         position = self._calcPixelAddr(dist, bearing)
 
+        '''
         if trail:
             points = [t.location for n,t in enumerate(track.history) if ((n < 1) or (t.location != track.history[n - 1].location))]
-            '''
             for n, t in enumerate(track.history):
                 pass
                 ##print(f"XXXX: {n}, {t.location.latitude, t.location.longitude}, {track.history[n - 1].location.latitude, track.history[n - 1].location.longitude}, {(n < 1) or (t.location != track.history[n - 1].location)}")
             print(f"Track: {track.flightNumber}, History: {points}")
-            '''
-            for pt in points:
-                x, y = self._calcPixelCoordinates(selfLocation, pt)
-                #### FIXME try a 1x1 or 2x2 rectangle instead
-                pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
+        '''
+        points = track.trackHistory(self.trails)
+        for pt in points:
+            x, y = self._calcPixelCoordinates(selfLocation, pt)
+            #### FIXME try a 1x1 or 2x2 rectangle instead
+            pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
 
         angle = 0
         if track.heading:
@@ -214,6 +215,7 @@ class RadarDisplay():
         textRect.midtop = (position[0], (position[1] + 7))
         self.surface.blit(text, textRect)
 
+        #### FIXME fix rotation of symbol to match the vector (which seems correct)
         s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category not in DO_NOT_ROTATE else symbol
         self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
                               (position[1] - (s.get_height() / 2))))
@@ -309,6 +311,11 @@ class RadarDisplay():
         """
         self.trails += 1
 
+    def trailsMax(self):
+        """ #### TODO
+        """
+        self.trails = -1
+
     def trailsReset(self):
         """ #### TODO
         """
@@ -340,6 +347,10 @@ class RadarDisplay():
                     self.trailsLess()
                 elif event.key == K_RIGHT:
                     self.trailsMore()
+                elif event.key == K_HOME:
+                    self.trailsReset()
+                elif event.key == K_END:
+                    self.trailsMax()
                 elif event.key == K_UP:
                     self.rangeUp()
                 elif event.key == K_DOWN:
