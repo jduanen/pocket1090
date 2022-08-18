@@ -122,6 +122,46 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - filtered tracks
   - details of selected track
 
+
+### RasPi Notes
+* update pygame
+  - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+  - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
+* must install 2.0 pygame: pip3 install pygame==2
+* get and build dump1090-fa
+  - git clone git@github.com:flightaware/dump1090.git
+  - sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
+  - ./prepare-build.sh bullseye
+  - cd package-bullseye
+  - dpkg-buildpackage -b --no-sign
+* GPS
+  - set up Serial Port for GPS
+    * enable with "sudo rapsi-config"
+      - "No" login shell
+      - "Yes" keep serial port enabled
+  - test GPS Serial connection with:
+    * stty -F /dev/serial0 raw 9600 cs8 clocal -cstopb
+    * cat /dev/serial0
+      - should get text
+  - install and use gpsd
+    * sudo apt-get update; sudo apt-get install gpsd gpsd-clients
+    * disable gpsd
+      - sudo systemctl stop gpsd.socket
+      - sudo systemctl disable gpsd.socket
+    * sudo gpsd /dev/serial0 -F /var/run/gpsd.sock
+    * sudo cgps -s
+    * keep it running?
+      - sudo systemctl enable gpsd.socket
+      - sudo systemctl start gpsd.socket
+  - gpsd installs python package
+    * from gps import *
+  - can install adafruit-circuitpython-gps
+    * import adafruit_gps
+
+* IMU
+  - set up SPI for IMU
+  - ?
+  - sudo pip3 install adafruit-circuitpython-bno055
 --------------
 
 * egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
