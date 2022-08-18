@@ -97,11 +97,11 @@ def run(options):
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
         if emergencies:
             #### TODO log these to a file
-            print(f"\nEmergencies: {emergencies}\n")
+            print(f"\a\nEmergencies: {emergencies}\n\a")
         oddVehicles = {k: v for k, v in aircraftInfo.items() if not v.get('category', "A").startswith("A")}
         if oddVehicles:
             #### TODO log these to a file
-            print(f"\nUnusual Vehicles: {oddVehicles}\n")
+            print(f"\a\nUnusual Vehicles: {oddVehicles}\n\a")
 
         for uniqueId, info in aircraftInfo.items():
             if uniqueId in tracks.keys():
