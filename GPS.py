@@ -17,14 +17,18 @@ from gps import gps, WATCH_ENABLE, WATCH_NEWSTYLE
 
 
 class GPS():
-    def __init__(self):
+    def __init__(self, fixedLocation=None):
         self.gpsd = gps(mode=(WATCH_ENABLE | WATCH_NEWSTYLE))
-        self.sampleTime = None
-        self.location = None
+        if (fixedLocation and not isinstance(fixedLocation, Point)):
+            logging.error("The arg 'fixedLocation' must by of type 'Point'")
+            raise AssertionError("Invalid arg type")
+        self.fixedLocation = fixedLocation
 
     def getTimeLocation(self, maxWaitTime=None):
         """#### TODO
         """
+        if self.fixedLocation:
+            return self.fixedLocation
         utcTime = None
         lat = None
         lon = None
@@ -39,6 +43,4 @@ class GPS():
                 logging.warning("Returned without GPS information")
                 return None, None
             time.sleep(.1)
-        self.sampleTime = utcTime
-        self.location = Point(lat, lon)
-        return self.sampleTime, self.location
+        return utcTime, Point(lat, lon)
