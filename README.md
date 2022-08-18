@@ -128,12 +128,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
   - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
 * must install 2.0 pygame: pip3 install pygame==2
-* get and build dump1090-fa
-  - git clone git@github.com:flightaware/dump1090.git
-  - sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
-  - ./prepare-build.sh bullseye
-  - cd package-bullseye
-  - dpkg-buildpackage -b --no-sign
+
 * GPS
   - set up Serial Port for GPS
     * enable with "sudo rapsi-config"
@@ -162,6 +157,23 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - set up SPI for IMU
   - ?
   - sudo pip3 install adafruit-circuitpython-bno055
+
+
+* dump1090-fa
+  - get and build dump1090-fa
+    * git clone git@github.com:flightaware/dump1090.git
+    * sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
+    * ./prepare-build.sh bullseye
+    * cd package-bullseye
+    * dpkg-buildpackage -b --no-sign
+  - run dump1090-fa
+    #### FIXME figure out how much to write and where
+    * /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+
+* run pocket1090
+  - pip3 install geopy gps pygame pyYaml
+  - ./pocket1090.py -v /tmp -L INFO -p 37.460181932780266,-122.1662421764409
+
 --------------
 
 * egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
