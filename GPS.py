@@ -9,12 +9,36 @@
 #
 ################################################################################
 
-from __init__ import * #### FIXME
+import logging
+import time
+
+from geopy import Point
+from gps import gps, WATCH_ENABLE, WATCH_NEWSTYLE
 
 
 class GPS():
     def __init__(self):
-        self.location = Coordinate()
+        self.gpsd = gps(mode=(WATCH_ENABLE | WATCH_NEWSTYLE))
+        self.sampleTime = None
+        self.location = None
 
-    def getLocation(self):
-        return self.location
+    def getTimeLocation(self, maxWaitTime=None):
+        """#### TODO
+        """
+        utcTime = None
+        lat = None
+        lon = None
+        start = time.time()
+        while None in (lat, lon, utcTime):
+            report = self.gpsd.next()
+            if report['class'] == "TPV":
+                lat = getattr(report, 'lat', None)
+                lon = getattr(report, 'lon', None)
+                utcTime = getattr(report, 'time', None)
+            if maxWaitTime and ((time.time() - start) > maxWaitTime):
+                logging.warning("Returned without GPS information")
+                return None, None
+            time.sleep(.1)
+        self.sampleTime = utcTime
+        self.location = Point(lat, lon)
+        return self.sampleTime, self.location
