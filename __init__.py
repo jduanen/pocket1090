@@ -93,6 +93,15 @@ class Category(Enum):
     C6 = 22 # Reserved
     C7 = 23 # Reserved
 
+    D0 = 24 # ?
+    D1 = 25 # ?
+    D2 = 26 # ?
+    D3 = 27 # ?
+    D4 = 28 # ?
+    D5 = 29 # ?
+    D6 = 30 # ?
+    D7 = 31 # ?
+
 @dataclass
 class Coordinate:
     x: float
