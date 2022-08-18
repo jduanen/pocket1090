@@ -1,7 +1,5 @@
 geopy
 gps
-matplotlib
-numpy
 pygame
 pyYaml
 SDL
