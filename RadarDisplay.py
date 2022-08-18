@@ -296,21 +296,25 @@ class RadarDisplay():
         """
         if self.trails > 0:
             self.trails -= 1
+        logging.info(f"Trails: {self.trails}")
 
     def trailsMore(self):
         """ #### TODO
         """
         self.trails += 1
+        logging.info(f"Trails: {self.trails}")
 
     def trailsMax(self):
         """ #### TODO
         """
         self.trails = -1
+        logging.info(f"Trails: {self.trails}")
 
     def trailsReset(self):
         """ #### TODO
         """
         self.trails = 0
+        logging.info(f"Trails: {self.trails}")
 
     def render(self, rotation, selfLocation, tracks):
         """Render the screen with the given rotation and location
