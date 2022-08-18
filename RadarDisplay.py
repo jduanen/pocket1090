@@ -19,8 +19,8 @@ DEF_DISPLAY_DIAMETER = 480
 
 DEF_RANGE_NUM = 5
 DEF_BACKGROUND_COLOR = (32, 32, 32)
-DEF_RANGE_RING_COLOR = (255, 255, 0)
-DEF_RING_FONT_COLOR = (240, 0, 240)
+DEF_RANGE_RING_COLOR = (128, 128, 0)
+DEF_RING_FONT_COLOR = (192, 0, 192)
 DEF_TRACK_FONT_COLOR = (0, 240, 0)
 DEF_VECTOR_COLOR = (0, 240, 0)
 DEF_TRAIL_COLOR = (128, 128, 128)
@@ -38,7 +38,7 @@ FONT_SIZE = 10
 MAX_SYMBOL_SIZE = 5
 ALL_CATEGORIES = (f"{letter}{number}" for letter in ("A", "B", "C", "D", "E") for number in range(8))
 TRACKED_CATEGORIES = (*ALL_CATEGORIES, "?")
-DO_NOT_ROTATE = ("?", "A0", "A7", "B6")
+ROTATE_SYMBOL = ("A1", "A2", "A3", "A4", "A5", "A6")
 
 
 Ring = namedtuple("Ring", "radius km")
@@ -132,7 +132,7 @@ class RadarDisplay():
                 continue
             filePath = f"assets/{cat}.png"
             if not os.path.exists(filePath):
-                #### FIXME
+                #### FIXME improve this -- e.g., different colors for different categories
                 dim = 8
                 s = pygame.Surface((dim, dim))
                 s.fill(self.bgColor)
@@ -165,9 +165,9 @@ class RadarDisplay():
         #### FIXME improve the symbols -- bigger, more colors?
         #### FIXME make rotation of symbol match vector
         #### TODO consider scaling symbols with range?
-        #### TODO track and include symbols for all categories -- i.e., [A-D][0-7]
+        #### TODO add symbols for all categories -- i.e., [A-D][0-7]
         #### TODO age symbols by changing alpha value with seen times ?
-
+        #### TODO lighten up the ring color
         #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
         #### TODO port to RasPi
         #### TODO implement GPS function with real HW
@@ -207,7 +207,7 @@ class RadarDisplay():
         self.surface.blit(text, textRect)
 
         #### FIXME fix rotation of symbol to match the vector (which seems correct)
-        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category not in DO_NOT_ROTATE else symbol
+        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category in ROTATE_SYMBOL else symbol
         self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
                               (position[1] - (s.get_height() / 2))))
 
