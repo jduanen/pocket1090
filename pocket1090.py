@@ -18,6 +18,7 @@
 ################################################################################
 
 import argparse
+from datetime import datetime, timezone
 import json
 import logging
 import math
@@ -26,13 +27,14 @@ import sys
 import time
 import yaml
 
+from geopy import Point
+
 from __init__ import * #### FIXME
 
 from Compass import Compass
 from GPS import GPS
 from RadarDisplay import RadarDisplay
 from Track import TrackSpec, Track
-
 
 DEF_CONFIG_FILE = "./pocket1090.yml"
 
@@ -53,7 +55,8 @@ def run(options):
         json.dump(rcvrInfo, sys.stdout, indent=4, sort_keys=True)
         print("")
 
-    gps = GPS()
+    if options.position is None:
+        gps = GPS()
     compass = Compass()
     screen = RadarDisplay(rangeNumber=5, fullScreen=options.fullScreen, verbose=options.verbose)
 
@@ -113,8 +116,12 @@ def run(options):
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
         azimuth = compass.getAzimuth()
-        selfLocation = gps.currentLocation()
-        logging.debug(f"Self: azimuth={azimuth}, location={selfLocation}")
+        if options.position is None:
+            curTime, selfLocation = gps.getTimeLocation()        #### TODO consider adding and handling timeouts
+        else:
+            curTime = datetime.utcnow().isoformat()
+            selfLocation = options.position
+        print(f"Self: curTime={curTime}, location={selfLocation}, azimuth={azimuth}")
         screen.render(azimuth, selfLocation, tracks)
     screen.quit()
     print("DONE")
@@ -122,7 +129,7 @@ def run(options):
 
 
 def getOps():
-    usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>] [-l <logFile>] [-v] <path>"
+    usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>] [-l <logFile>] [-p <lat>,<lon>] [-v] <path>"
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-c", "--configFile", action="store", type=str, default=DEF_CONFIG_FILE,
@@ -137,6 +144,9 @@ def getOps():
     ap.add_argument(
         "-l", "--logFile", action="store", type=str,
         help="Path to location of logfile (create it if it doesn't exist)")
+    ap.add_argument(
+        "-p", "--position", action="store", type=str,
+        help="Fixed position to use instead of GPS (string containing two comma-separated floats))")
     ap.add_argument(
         "-v", "--verbose", action="count", default=0, help="Print debug info")
     ap.add_argument(
@@ -183,6 +193,10 @@ def getOps():
     logging.basicConfig(filename=opts.config.get('logFile', None),
                         level=opts.config['level'])
 
+    if opts.position:
+        position = opts.position.split(",")
+        opts.position = Point(float(position[0]), float(position[1]))
+
     if opts.verbose:
         print(f"    JSON Files Path: {opts.path}")
         if opts.fullScreen:
@@ -192,6 +206,10 @@ def getOps():
             print(f"    Logging to:      {opts.config['logFile']}")
         else:
             print(f"    Logging to stdout")
+        if opts.position:
+            print(f"    Fixed Position:  {opts.position}")
+        else:
+            print(f"    Using GPS for Time and Position")
 
     return opts
 
