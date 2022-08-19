@@ -21,7 +21,7 @@ class GPS():
         self.gpsd = gps(mode=(WATCH_ENABLE | WATCH_NEWSTYLE))
         if (fixedLocation and not isinstance(fixedLocation, Point)):
             logging.error("The arg 'fixedLocation' must by of type 'Point'")
-            raise AssertionError("Invalid arg type")
+            raise RuntimeError("Invalid GPS arg type")
         self.fixedLocation = fixedLocation
 
     def getTimeLocation(self, maxWaitTime=None):
