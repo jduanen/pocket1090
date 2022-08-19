@@ -17,7 +17,7 @@ from __init__ import * #### FIXME
 
 
 I2C_DEVICE = "/dev/i2c-1"
-RESET_PIN = 5
+DEF_RESET_PIN = 5
 
 
 # From BNO055 datasheet section 4.3.58
@@ -88,8 +88,8 @@ ALL_SELF_TEST_PASS = 0x0F
 
 
 class Compass():
-    def __init__(self, serialPort=I2C_DEVICE, rstPin=RESET_PIN):
-        self.bno = BNO055.BNO055(serialPort, rstPin)
+    def __init__(self, rstPin=DEF_RESET_PIN):
+        self.bno = BNO055.BNO055(rstPin)
         if not self.bno.begin():
             logging.error("Failed to init the compass")
             raise RuntimeError("BNO055 Initialization Error")
