@@ -154,15 +154,37 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * from gps import *
   - can install adafruit-circuitpython-gps
     * import adafruit_gps
+  --> running gpsd incurs a constant cpu load and so would rather just query on-demand
+    * need to use library that works without gpsd
 
 * IMU
-  - set up SPI for IMU
+  - set up I2C for IMU
+    * I2C HW: SCL=3, SDA=2
+    * Raspi doesn't do I2C clock stretching properly so have to do something else
+      - could switch and use the IMU in serial mode (with the second HW UART?)
+    * replace i2c device with bit-banging driver (using same pins) via device tree overlay
+      - sudo raspi-config
+      - Interfaces->I2C -- disable ('<NO>')
+      - sudo cp /boot/config.txt /boot/config.txt.orig
+      - sudo ex /boot/config.txt
+        * add: dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=02,i2c_gpio_scl=03
+      - reboot and "ls -l /dev/i2c*" look for /dev/i2c-3
+        * crw-rw---- 1 root i2c 89,  3 Dec 1 18:30 /dev/i2c-3
+      - verify with: i2cdetect -y -r 3
+        * should show BNO055 at address 28
+    * alternatively use second HW UART and strap BNO055 to use serial (instead of I2C)
+  - sudo pip3 install Adafruit-Blinka
+    import board
+    import busio
+    i2c = busio.I2C(board.SCL, board.SDA)
   - sudo pip3 install adafruit-bno055
-  - from adafruit_bno055 import BNO055
-    bno = BNO055.BNO055(serial_port="/dev/i2c-2", rst=5)
+  - sudo pip3 install adafruit-bno055
+  - from Adafruit_BNO055 import BNO055
+    bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
     if not bno.begin():
       print("ERROR: failed to init")
 
+  - consider getting this: http://gps-pie.com/L80_slice.htm
 
 * dump1090-fa
   - get and build dump1090-fa
