@@ -174,7 +174,3 @@ class Compass():
         """
         x, y, z = self.bno.read_gravity()
         return x, y, z
-
-    def getAzimuth(self):
-        return 0.0, 0.0
-
