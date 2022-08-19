@@ -9,8 +9,6 @@
 #
 ################################################################################
 
-from enum import Enum
-
 from Adafruit_BNO055 import BNO055
 
 from __init__ import * #### FIXME
@@ -20,68 +18,67 @@ I2C_DEVICE = "/dev/i2c-1"
 DEF_RESET_PIN = 5
 
 
+# System Status register values
 # From BNO055 datasheet section 4.3.58
-class SystemStatus(Enum):
-    SYSTEM_IDLE  = 0
-    SYSTEM_ERROR = 1
-    PERIPH_INIT  = 2
-    SYSTEM_INIT  = 3
-    SELF_TESTING = 4
-    FUSION       = 5
-    NO_FUSION    = 6
+SYSTEM_IDLE  = 0
+SYSTEM_ERROR = 1
+PERIPH_INIT  = 2
+SYSTEM_INIT  = 3
+SELF_TESTING = 4
+FUSION       = 5
+NO_FUSION    = 6
 
 SYSTEM_STATUS = {
-    SystemStatus.SYSTEM_IDLE:  "System idle",
-    SystemStatus.SYSTEM_ERROR: "System error",
-    SystemStatus.PERIPH_INIT:  "Initializing peripherals",
-    SystemStatus.SYSTEM_INIT:  "System initialization",
-    SystemStatus.SELF_TESTING: "Executing self-test",
-    SystemStatus.FUSION:       "Sensor fusion algorithm running",
-    SystemStatus.NO_FUSION:    "System running without sensor fusion algorithm"
+    SYSTEM_IDLE:  "System idle",
+    SYSTEM_ERROR: "System error",
+    PERIPH_INIT:  "Initializing peripherals",
+    SYSTEM_INIT:  "System initialization",
+    SELF_TESTING: "Executing self-test",
+    FUSION:       "Sensor fusion algorithm running",
+    NO_FUSION:    "System running without sensor fusion algorithm"
 }
 
-# From BNO055 datasheet section 4.3.59
+# System Error Codes
 # These codes are valid if the SYS_STATUS register == 0x01 (SYSTEM_ERROR)
-class SystemErrorCode(Enum):
-    NO_ERROR        = 0
-    PERIPH_ERROR    = 1
-    SYS_INIT_ERROR  = 2
-    SELF_TEST_FAIL  = 3
-    REG_MAP_VAL_OOR = 4
-    REG_MAP_ADR_OOR = 5
-    REG_MAP_WR_ERR  = 6
-    NO_LOW_POWER    = 7
-    NO_ACCL_POWER   = 8
-    FUSION_ERROR    = 9
-    SENSOR_ERROR    = 10
+# From BNO055 datasheet section 4.3.59
+NO_ERROR        = 0
+PERIPH_ERROR    = 1
+SYS_INIT_ERROR  = 2
+SELF_TEST_FAIL  = 3
+REG_MAP_VAL_OOR = 4
+REG_MAP_ADR_OOR = 5
+REG_MAP_WR_ERR  = 6
+NO_LOW_POWER    = 7
+NO_ACCL_POWER   = 8
+FUSION_ERROR    = 9
+SENSOR_ERROR    = 10
 
 SYSTEM_ERROR_CODE = {
-    SystemErrorCode.NO_ERROR:        "No error",
-    SystemErrorCode.PERIPH_ERROR:    "Peripheral initialization error",
-    SystemErrorCode.SYS_INIT_ERROR:  "System initialization error",
-    SystemErrorCode.SELF_TEST_FAIL:  "Self-test result failed",
-    SystemErrorCode.REG_MAP_VAL_OOR: "Register map value out of range",
-    SystemErrorCode.REG_MAP_ADR_OOR: "Register map address out of range",
-    SystemErrorCode.REG_MAP_WR_ERR:  "Register map write error",
-    SystemErrorCode.NO_LOW_POWER:    "BNO low power mode not available",
-    SystemErrorCode.NO_ACCL_POWER:   "Accelerometer power mode not available",
-    SystemErrorCode.FUSION_ERROR:    "Fusion algorithm configuration error",
-    SystemErrorCode.SENSOR_ERROR:    "Sensor configuration error"
+    NO_ERROR:        "No error",
+    PERIPH_ERROR:    "Peripheral initialization error",
+    SYS_INIT_ERROR:  "System initialization error",
+    SELF_TEST_FAIL:  "Self-test result failed",
+    REG_MAP_VAL_OOR: "Register map value out of range",
+    REG_MAP_ADR_OOR: "Register map address out of range",
+    REG_MAP_WR_ERR:  "Register map write error",
+    NO_LOW_POWER:    "BNO low power mode not available",
+    NO_ACCL_POWER:   "Accelerometer power mode not available",
+    FUSION_ERROR:    "Fusion algorithm configuration error",
+    SENSOR_ERROR:    "Sensor configuration error"
 }
 
+# Self Test register bit-fields -- if bit is set, the test passed
 # From BNO055 datasheet section 4.3.59
-class SelfTestResult(Enum):
-    ACCEL_ST = (1 << 0)
-    MAGNT_ST = (1 << 1)
-    GYRO_ST  = (1 << 2)
-    MCU_ST   = (1 << 3)
+ACCEL_ST = (1 << 0)
+MAGNT_ST = (1 << 1)
+GYRO_ST  = (1 << 2)
+MCU_ST   = (1 << 3)
 
-# bit vector -- if bit is set, the test passed
 SELF_TEST_RESULTS = {
-    SelfTestResult.ACCEL_ST: "Accelerometer",
-    SelfTestResult.MAGNT_ST: "Magnetometer",
-    SelfTestResult.GYRO_ST:  "Gyroscope",
-    SelfTestResult.MCU_ST:   "MCU"
+    ACCEL_ST: "Accelerometer",
+    MAGNT_ST: "Magnetometer",
+    GYRO_ST:  "Gyroscope",
+    MCU_ST:   "MCU"
 }
 
 ALL_SELF_TEST_PASS = 0x0F
