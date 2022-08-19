@@ -16,7 +16,8 @@ from Adafruit_BNO055 import BNO055
 from __init__ import * #### FIXME
 
 
-I2C_DEVICE = "/dev/i2c-2"
+I2C_DEVICE = "/dev/i2c-1"
+RESET_PIN = 5
 
 
 # From BNO055 datasheet section 4.3.58
@@ -83,12 +84,12 @@ SELF_TEST_RESULTS = {
     SelfTestResult.MCU_ST:   "MCU"
 }
 
-ALL_SELF_TEST_PASS = (ACCEL_ST & MAGNT_ST & GYRO_ST & MCU_ST)
+ALL_SELF_TEST_PASS = 0x0F
 
 
 class Compass():
-    def __init__(self):
-        self.bno = BNO055.BNO055(serial_port=I2C_DEVICE, rst=5)
+    def __init__(self, serialPort=I2C_DEVICE, rstPin=RESET_PIN):
+        self.bno = BNO055.BNO055(serialPort, rstPin)
         if not self.bno.begin():
             logging.error("Failed to init the compass")
             raise RuntimeError("BNO055 Initialization Error")
