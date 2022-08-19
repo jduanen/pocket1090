@@ -57,7 +57,8 @@ def run(options):
 
     if options.position is None:
         gps = GPS()
-    compass = Compass()
+    if options.orientation is None:
+        compass = Compass()
     screen = RadarDisplay(rangeNumber=5, fullScreen=options.fullScreen, verbose=options.verbose)
 
     running = True
@@ -94,7 +95,7 @@ def run(options):
         if options.verbose:
             currentFlightNums = [a['flight'] for a in aircraftInfo.values() if 'flight' in a]
             if currentFlightNums and options.verbose:
-                print(f"Flight #s: {currentFlightNums}")
+                print(f"Flight #s ({len(currentFlightNums)}): {currentFlightNums}")
 
         #### TODO detect "interesting" cases (e.g., emergency, other than "A?") and save them
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
@@ -115,21 +116,25 @@ def run(options):
                 logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
-        azimuth = compass.getAzimuth()
+        if options.orientation is None:
+            heading, roll, pitch = compass.getEulerAngles()
+        else:
+            heading, roll, pitch = options.orientation
         if options.position is None:
             curTime, selfLocation = gps.getTimeLocation()        #### TODO consider adding and handling timeouts
         else:
             curTime = datetime.utcnow().isoformat()
             selfLocation = options.position
-        print(f"Self: curTime={curTime}, location={selfLocation}, azimuth={azimuth}")
-        screen.render(azimuth, selfLocation, tracks)
+        print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}")
+        screen.render(heading, selfLocation, tracks)
     screen.quit()
     print("DONE")
     return 0
 
 
 def getOps():
-    usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>] [-l <logFile>] [-p <lat>,<lon>] [-v] <path>"
+    usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>]"
+    usage += " [-l <logFile>] [-o <heading>,<roll>,<pitch>] [-p <lat>,<lon>] [-v] <path>"
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-c", "--configFile", action="store", type=str, default=DEF_CONFIG_FILE,
@@ -145,8 +150,11 @@ def getOps():
         "-l", "--logFile", action="store", type=str,
         help="Path to location of logfile (create it if it doesn't exist)")
     ap.add_argument(
+        "-o", "--orientation", action="store", type=str,
+        help="Fixed orientation to use instead of Compass (string containing three comma-separated floats: 'heading, roll, pitch'))")
+    ap.add_argument(
         "-p", "--position", action="store", type=str,
-        help="Fixed position to use instead of GPS (string containing two comma-separated floats))")
+        help="Fixed position to use instead of GPS (string containing two comma-separated floats: 'lat, lon'))")
     ap.add_argument(
         "-v", "--verbose", action="count", default=0, help="Print debug info")
     ap.add_argument(
@@ -193,8 +201,18 @@ def getOps():
     logging.basicConfig(filename=opts.config.get('logFile', None),
                         level=opts.config['level'])
 
+    if opts.orientation:
+        orientation = opts.orientation.split(",")
+        if len(orientation) != 3:
+            logging.error(f"Invalid orientation tuple: '{opts.orientation}'")
+            sys.exit(1)
+        opts.orientation = (float(orientation[0]), float(orientation[1]), float(orientation[2]))
+
     if opts.position:
         position = opts.position.split(",")
+        if len(position) != 2:
+            logging.error(f"Invalid position tuple: '{opts.position}'")
+            sys.exit(1)
         opts.position = Point(float(position[0]), float(position[1]))
 
     if opts.verbose:
