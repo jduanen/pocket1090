@@ -125,7 +125,8 @@ def run(options):
         else:
             curTime = datetime.utcnow().isoformat()
             selfLocation = options.position
-        print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}")
+        if options.verbose:
+            print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}, roll={roll}, pitch={pitch}")
         screen.render(heading, selfLocation, tracks)
     screen.quit()
     print("DONE")
