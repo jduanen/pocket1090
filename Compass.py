@@ -9,6 +9,8 @@
 #
 ################################################################################
 
+import logging
+
 from Adafruit_BNO055 import BNO055
 
 from __init__ import * #### FIXME
