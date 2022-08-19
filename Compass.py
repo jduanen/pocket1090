@@ -131,7 +131,7 @@ class Compass():
         """Read and return the orientation as a quaternion
           #### TODO
         """
-        x, y, z, w = self.bno.read_quaterion()
+        x, y, z, w = self.bno.read_quaternion()
         return x, y, z, w
 
     def getSensorTemp(self):
