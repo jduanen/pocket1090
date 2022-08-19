@@ -143,11 +143,13 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * disable gpsd
       - sudo systemctl stop gpsd.socket
       - sudo systemctl disable gpsd.socket
-    * sudo gpsd /dev/serial0 -F /var/run/gpsd.sock
-    * sudo cgps -s
+    * manually start daemon
+      - sudo gpsd /dev/serial0 -F /var/run/gpsd.sock
     * keep it running?
       - sudo systemctl enable gpsd.socket
       - sudo systemctl start gpsd.socket
+  - run desktop client
+    * sudo cgps -s
   - gpsd installs python package
     * from gps import *
   - can install adafruit-circuitpython-gps
@@ -155,8 +157,11 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 * IMU
   - set up SPI for IMU
-  - ?
-  - sudo pip3 install adafruit-circuitpython-bno055
+  - sudo pip3 install adafruit-bno055
+  - from adafruit_bno055 import BNO055
+    bno = BNO055.BNO055(serial_port="/dev/i2c-2", rst=5)
+    if not bno.begin():
+      print("ERROR: failed to init")
 
 
 * dump1090-fa
@@ -171,8 +176,9 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
 
 * run pocket1090
+  - sudo apt install libsdl2-ttf-2*
   - pip3 install geopy gps pygame pyYaml
-  - ./pocket1090.py -v /tmp -L INFO -p 37.460181932780266,-122.1662421764409
+  - ./pocket1090.py -v /tmp -L INFO
 
 --------------
 
