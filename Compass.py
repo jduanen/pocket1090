@@ -30,13 +30,13 @@ class SystemStatus(Enum):
     NO_FUSION    = 6
 
 SYSTEM_STATUS = {
-    SYSTEM_IDLE:  "System idle",
-    SYSTEM_ERROR: "System error",
-    PERIPH_INIT:  "Initializing peripherals",
-    SYSTEM_INIT:  "System initialization",
-    SELF_TESTING: "Executing self-test",
-    FUSION:       "Sensor fusion algorithm running",
-    NO_FUSION:    "System running without sensor fusion algorithm"
+    SystemStatus.SYSTEM_IDLE:  "System idle",
+    SystemStatus.SYSTEM_ERROR: "System error",
+    SystemStatus.PERIPH_INIT:  "Initializing peripherals",
+    SystemStatus.SYSTEM_INIT:  "System initialization",
+    SystemStatus.SELF_TESTING: "Executing self-test",
+    SystemStatus.FUSION:       "Sensor fusion algorithm running",
+    SystemStatus.NO_FUSION:    "System running without sensor fusion algorithm"
 }
 
 # From BNO055 datasheet section 4.3.59
@@ -55,17 +55,17 @@ class SystemErrorCode(Enum):
     SENSOR_ERROR    = 10
 
 SYSTEM_ERROR_CODE = {
-    NO_ERROR:        "No error",
-    PERIPH_ERROR:    "Peripheral initialization error",
-    SYS_INIT_ERROR:  "System initialization error",
-    SELF_TEST_FAIL:  "Self-test result failed",
-    REG_MAP_VAL_OOR: "Register map value out of range",
-    REG_MAP_ADR_OOR: "Register map address out of range",
-    REG_MAP_WR_ERR:  "Register map write error",
-    NO_LOW_POWER:    "BNO low power mode not available",
-    NO_ACCL_POWER:   "Accelerometer power mode not available",
-    FUSION_ERROR:    "Fusion algorithm configuration error",
-    SENSOR_ERROR:    "Sensor configuration error"
+    SystemErrorCode.NO_ERROR:        "No error",
+    SystemErrorCode.PERIPH_ERROR:    "Peripheral initialization error",
+    SystemErrorCode.SYS_INIT_ERROR:  "System initialization error",
+    SystemErrorCode.SELF_TEST_FAIL:  "Self-test result failed",
+    SystemErrorCode.REG_MAP_VAL_OOR: "Register map value out of range",
+    SystemErrorCode.REG_MAP_ADR_OOR: "Register map address out of range",
+    SystemErrorCode.REG_MAP_WR_ERR:  "Register map write error",
+    SystemErrorCode.NO_LOW_POWER:    "BNO low power mode not available",
+    SystemErrorCode.NO_ACCL_POWER:   "Accelerometer power mode not available",
+    SystemErrorCode.FUSION_ERROR:    "Fusion algorithm configuration error",
+    SystemErrorCode.SENSOR_ERROR:    "Sensor configuration error"
 }
 
 # From BNO055 datasheet section 4.3.59
@@ -77,10 +77,10 @@ class SelfTestResult(Enum):
 
 # bit vector -- if bit is set, the test passed
 SELF_TEST_RESULTS = {
-    ACCEL_ST: "Accelerometer",
-    MAGNT_ST: "Magnetometer",
-    GYRO_ST:  "Gyroscope",
-    MCU_ST:   "MCU"
+    SelfTestResult.ACCEL_ST: "Accelerometer",
+    SelfTestResult.MAGNT_ST: "Magnetometer",
+    SelfTestResult.GYRO_ST:  "Gyroscope",
+    SelfTestResult.MCU_ST:   "MCU"
 }
 
 ALL_SELF_TEST_PASS = (ACCEL_ST & MAGNT_ST & GYRO_ST & MCU_ST)
@@ -99,8 +99,8 @@ class Compass():
             msg += f", System Error: {SYSTEM_ERROR_CODE[err]} '0x{err:02X}'"
         logging.info(msg)
         if selfTest != ALL_SELF_TEST_PASS:
-            failedUnits = [unitName for bitNumber, unitName in SELF_TEST_RESULTS.items() if (selfTest & bitNumber)]
-            logging.info(f"BNO055 Self-Tests Failed: {failedUnits.join(",")}")
+            failedUnits = [unitName for bitNumber, unitName in SELF_TEST_RESULTS.items() if (selfTest & bitNumber)].join(",")
+            logging.info(f"BNO055 Self-Tests Failed: {failedUnits}")
 
         sw, bl, accel, magn, gyro = self.bno.get_revision()
         logging.info(f"Software version: {sw}, Bootloader version: {bl}, Accelerometer Id: 0x{accel:02X}, Magnetometer Id: 0x{magn}, Gyroscope Id: 0x{gyro}")
