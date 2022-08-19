@@ -41,7 +41,7 @@ class Track():
     def __repr__(self):
         s = f"uniqueId: "
         if self.uniqueId:
-            s += f"{self.uniqueId}"
+            s += f"{self.uniqueId: >7}"
         else:
             s += f"     ?"
         s += f", flightNumber: "
