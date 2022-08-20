@@ -219,7 +219,13 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
           avgLon = sum(lons)/len(lons)
           plt.plot(avgLat, avgLon, marker="x")
           plt.show()
-      - 
+      - ????
+    * add map overlays?
+      - get map rectangles from https://openstreetmap.org
+        * export image as .png file with Export button
+        * define bounding box with min/max lat/lon values
+          - fixed size (e.g., 64km on a side) from given center point?
+      - load image with: myMap = plt.imread(<path>)
 * IMU
   - set up I2C for IMU
     * I2C HW: SCL=3, SDA=2
