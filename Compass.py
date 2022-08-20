@@ -94,7 +94,11 @@ class Compass():
             raise RuntimeError("BNO055 Initialization Error")
 
         status, selfTest, err = self.bno.get_system_status()
-        msg = f"BNO055 Status: {SYSTEM_STATUS[status]} '0x{status:02X}'"
+        msg = f"BNO055 Status: "
+        if status > NO_FUSION:
+            msg += f"Unknown Status '{status}', "
+        else:
+            msg += f"{SYSTEM_STATUS[status]} '0x{status:02X}'"
         if status == 0x01:
             msg += f", System Error: {SYSTEM_ERROR_CODE[err]} '0x{err:02X}'"
         logging.info(msg)
