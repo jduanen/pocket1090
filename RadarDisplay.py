@@ -130,7 +130,7 @@ class RadarDisplay():
                 pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
                 symbols[cat] = s
                 continue
-            filePath = f"assets/{cat}.png"
+            filePath = f"./assets/{cat}.png"  #### FIXME put these somewhere well-known in install and reference it
             if not os.path.exists(filePath):
                 #### FIXME improve this -- e.g., different colors for different categories
                 dim = 8
