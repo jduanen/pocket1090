@@ -72,6 +72,6 @@ class GPS():
         """ #### FIXME
         """
         time, loc = self.getTimeLocation(maxWaitTime)
-        avgLat = sum(self.lats) / num(self.lats)
-        avgLon = sum(self.lons) / num(self.lons)
+        avgLat = sum(self.lats) / len(self.lats)
+        avgLon = sum(self.lons) / len(self.lons)
         return time, Point(avgLat, avgLon)
