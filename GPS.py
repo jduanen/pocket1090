@@ -9,6 +9,7 @@
 #
 ################################################################################
 
+from collections import deque
 import logging
 import time
 
@@ -16,13 +17,15 @@ from geopy import Point
 from pynmeagps import NMEAReader
 from serial import Serial
 
-        (raw, parsed) = nmr.read()
 
 DEF_SERIAL_PORT = "/dev/ttyAMA0"
 STREAM_BAUD_RATE = 9600
 STREAM_TIMEOUT = 3
 
 WARN_INTERVAL = 1000
+
+MAX_FILTER_LEN = 30
+
 
 class GPS():
     def __init__(self, serialPort=DEF_SERIAL_PORT, fixedLocation=None):
@@ -35,6 +38,8 @@ class GPS():
         else:
             self.stream = Serial(serialPort, baudrate=STREAM_BAUD_RATE, timeout=STREAM_TIMEOUT)
             self.nmr = NMEAReader(self.stream)
+        self.lats = deque([], maxlen=MAX_FILTER_LEN)
+        self.lons = deque([], maxlen=MAX_FILTER_LEN)
 
     def getTimeLocation(self, maxWaitTime=None):
         """#### TODO
@@ -59,4 +64,14 @@ class GPS():
                 logging.warning("Returned without GPS information")
                 return None, None
             time.sleep(.1)
+        self.lats.append(lat)
+        self.lons.append(lon)
         return utcTime, Point(lat, lon)
+
+    def getFilteredLocation(self, maxWaitTime=None):
+        """ #### FIXME
+        """
+        time, loc = self.getTimeLocation(maxWaitTime)
+        avgLat = sum(self.lats) / num(self.lats)
+        avgLon = sum(self.lons) / num(self.lons)
+        return time, Point(avgLat, avgLon)
