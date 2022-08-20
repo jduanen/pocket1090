@@ -156,7 +156,62 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * import adafruit_gps
   --> running gpsd incurs a constant cpu load and so would rather just query on-demand
     * need to use library that works without gpsd
-
+      - pip install adafruit-circuitpython-gps
+      - pip install pynmeagps
+      - from serial import Serial
+        import adafruit_gps
+        from pynmeagps import NMEAReader
+        uart = Serial(port="/dev/ttyAMA0", baudrate=9600, timeout=30)
+        gps = adafruit_gps.GPS(uart, debug=False)
+        stream = Serial('/dev/ttyAMA0', baudrate=9600, timeout=3)
+        nmr = NMEAReader(stream)
+        (raw, parsed) = nmr.read()
+  - NEMA 0183 parsing
+    * $GPGGA,181908.00,3404.7041778,N,07044.3966270,W,4,13,1.00,495.144,M,29.200,M,0.10,0000*40
+      - $GPGGA: message with fix data
+        *'GP' means GPS, 'GL' means GLONASS
+      - MsgId:
+        * VTG: Course over ground and ground speed
+        * GSV: GPS Satellites in view
+        * RMC: Recommended Minimum Specific GPS Data -- UTC time, status, latitude, longitude, speed over ground, date, magnetic variation of position
+        * GSA: GPS DOP and Active Satellites
+        * GGA: GPS Fix Data
+          - UTC of position fix in HHMMMSS.SS format
+          - Latitude in DD MM,MMMM format (0-7 decimal places)
+          - direction of latitude: 'N', 'S'
+          - Longitude in DD MM,MMMM format (0-7 decimal places)
+          - direction of longitude: 'E', 'W'
+          - GPS Quality indicator:
+            * 0: invalid
+            * 1: GPS fix
+            * 2: DGPS fix
+            * 3: ?
+            * 4: real-time kinematic, fixed integers
+            * 5: real-time kinematic, float integers
+          - Number of SVs in use: [00-12]
+          - HDOP
+          - Antenna height -- MSL reference
+          - "M": meters
+          - Geoidal separation
+          - "M" indicates the Geoidal separation is in meters
+          - Correction age of the GPS data record: Null when not using DGPS
+          - Base Station ID: [0000-1023]
+        * RMC: Minimum GPS Data
+          - UTC of position fix in HHMMMSS.SS format
+          - Status: 'A'=valid, 'V'=invalid
+          - Latitude coordinate (0-7 decimal places)
+          - Latitude direction: 'N', 'S'
+          - Longitude coordinate (0-7 decimal places)
+          - Longitude direction: 'E', 'W'
+          - Speed over Ground in knots (0-3 decimal places)
+          - Track Made Good, True, in degrees
+          - Date in dd/mm/yy format
+          - Magnetic variation in degrees
+    * looks like I receive as many RMC and GGA messages, so I'll use the GGA messages
+      while True:
+        _, p = nmr.read()
+        if p.msgID == "GGA":
+          
 * IMU
   - set up I2C for IMU
     * I2C HW: SCL=3, SDA=2
@@ -183,7 +238,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
     if not bno.begin():
       print("ERROR: failed to init")
-
   - consider getting this: http://gps-pie.com/L80_slice.htm
 
 * dump1090-fa
