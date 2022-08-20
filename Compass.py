@@ -103,7 +103,7 @@ class Compass():
             msg += f", System Error: {SYSTEM_ERROR_CODE[err]} '0x{err:02X}'"
         logging.info(msg)
         if selfTest != ALL_SELF_TEST_PASS:
-            failedUnits = [unitName for bitNumber, unitName in SELF_TEST_RESULTS.items() if (selfTest & bitNumber)].join(",")
+            failedUnits = [unitName for bitNumber, unitName in SELF_TEST_RESULTS.items() if (selfTest & bitNumber)]
             logging.info(f"BNO055 Self-Tests Failed: {failedUnits}")
 
         sw, bl, accel, magn, gyro = self.bno.get_revision()
