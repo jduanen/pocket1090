@@ -121,7 +121,7 @@ def run(options):
         else:
             heading, roll, pitch = options.orientation
         if options.position is None:
-            curTime, selfLocation = gps.getFilteredLocation()        #### TODO consider adding and handling timeouts
+            curTime, selfLocation = gps.getFilteredLocation()  #### TODO consider adding and handling timeouts
         else:
             curTime = datetime.utcnow().isoformat()
             selfLocation = options.position
