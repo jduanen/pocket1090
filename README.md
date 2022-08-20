@@ -211,7 +211,15 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
       while True:
         _, p = nmr.read()
         if p.msgID == "GGA":
-          
+    * filter (lat,lon) samples (assuming not near poles/equator/where discontinuities occur)
+      - look at set of samples
+        * import matplotlib.pyplot as plt
+          plt.scatter(x=lat,y=lon)
+          avgLat = sum(lats)/len(lats)
+          avgLon = sum(lons)/len(lons)
+          plt.plot(avgLat, avgLon, marker="x")
+          plt.show()
+      - 
 * IMU
   - set up I2C for IMU
     * I2C HW: SCL=3, SDA=2
