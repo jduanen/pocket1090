@@ -1,5 +1,6 @@
 geopy
 gps
 pygame
+pynmeagps
 pyYaml
 SDL
