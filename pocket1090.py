@@ -59,7 +59,7 @@ def run(options):
         gps = GPS()
     if options.orientation is None:
         compass = Compass()
-    screen = RadarDisplay(rangeNumber=5, fullScreen=options.fullScreen, verbose=options.verbose)
+    screen = RadarDisplay(fullScreen=options.fullScreen, verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
