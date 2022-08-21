@@ -54,6 +54,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - for general aviation, its the aircraft's registration number
 * ICAO address: 24b unique address, programmed at installation (like a MAC address?)
 * in UAT Anonymous Mode, may not send ICAO address
+* Unique Id starting with '~' means non-ICAO address -- e.g., TIS-B data coming from ground station?
 
 #### Interesting Events Captured So Far
  * statistics
@@ -106,6 +107,15 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - enable offline analysis or replay of tracks
 * set alarms -- things to watch for
   - e.g., specific planes, specific types of planes, specific metrics?
+* switch to making auto-ranging the default
+  - max range is always a power of two in Km
+  - start with default range
+  - after each polling cycle, determine max distance of all tracks, make max range be next higher power of two (in Km)
+  - allow switching off autoRange (i.e., keep current range) and switching back on
+  - turn off autoRange whenever range-up/down/reset/max command given
+  - use last range or default range when no tracks available
+* create different profiles for Handheld and Desktop uses -- do it all with config files
+  - put screen size and where to get assets into config (use different sized symbols based on screen size)
 
 ### TODO
 
@@ -115,13 +125,18 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * Change radar display if held vertically or horizontally?
 * Make sure all temp files are written to appropriate file system
 * adjust dump1090-fa so it generates output at appropriate intervals
+* come up with simple way of defining filters
 * indicate how many tracks are being filtered at any point in time?
 * add secondary display (small OLED) for additional information
   - time (UTC) and location (lat/lon)
-  - summary of current tracks
+  - summary of current tracks: (flight number, category, altitude, speed, distance)
   - filtered tracks
-  - details of selected track
-
+  - details of selected track: (?)
+* improve symbols
+  - create different sized ones for different displays
+  - use color and shape better
+  - rotate (or not) properly
+  - store different types in different places, put path in config
 
 ### RasPi Notes
 * update pygame
