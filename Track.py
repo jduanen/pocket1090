@@ -21,7 +21,7 @@ class TrackSpec():
     flightNumber: str   # flight: callsign, the flight name or aircraft registration as 8 chars
     altitude: int       # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
     speed: float        # gs: ground speed in knots
-    heading: float        # track: true track over ground in degrees (0-359)
+    heading: float      # track: true track over ground in degrees (0-359)
     category: str       # category: emitter category, identifies aircraft classes (values "A0"-"D7")
     lat: float          # lat: aircraft position in decimal degrees
     lon: float          # lon: aircraft position in decimal degrees
