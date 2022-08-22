@@ -94,22 +94,22 @@ class RadarDisplay():
           N.B. Distances are in Km
         """
         maxD = maxDistance if maxDistance >= 1 else 1
-        self.maxDistance = 1 << maxD.bit_length()
+        self.maxDistance = 1 << int(maxD).bit_length()
         self.ringDistances = [int(self.maxDistance / d) for d in RING_DIVISORS]
         self._createRangeRings()
 
-    def _calcPixelAddr(self, dist, bearing):
+    def _calcPixelAddr(self, distance, azimuth):
         """Map the given a location (lat,lon) calculate and return the screen
             position (x,y) for the current display size and range selection
           #### TODO
           assumes trackLocation isn't off the screen
         """
-        metersPerPixel = (self.ringDistances[-1] * 1000.0) / (self.diameter / 2.0)
+        metersPerPixel = (self.maxDistance * 1000.0) / (self.diameter / 2.0)
         if self.verbose > 1:
-            print(f"      Dist: {dist:.2f}, Bearing: {bearing:.2f}")
-        distPx = (dist * 1000) / metersPerPixel
-        x = (distPx * math.sin(math.radians(bearing))) + (self.diameter / 2)
-        y = -(distPx * math.cos(math.radians(bearing))) + (self.diameter / 2)
+            print(f"      Distance: {distance:.2f}, Azimuth: {azimuth:.2f}")
+        distPx = (distance * 1000) / metersPerPixel
+        x = (distPx * math.sin(math.radians(azimuth))) + (self.diameter / 2)
+        y = -(distPx * math.cos(math.radians(azimuth))) + (self.diameter / 2)
         return (x, y)
 
     def _createSymbols(self):
@@ -153,7 +153,7 @@ class RadarDisplay():
             symbols[cat] = surface
         self.symbols = symbols
 
-    def _renderSymbol(self, track, selfLocation, trackLocation, trail=0):
+    def _renderSymbol(self, track, selfLocation, trail=0):
         """Render the named symbol at the given coordinate, with the appropriately sized speed and heading vector
           If symbolName is None, then use the unknown symbol
           If speed is None, use a min-length vector
@@ -168,29 +168,24 @@ class RadarDisplay():
         #### TODO consider scaling symbols with range?
         #### TODO add symbols for all categories -- i.e., [A-D][0-7]
         #### TODO age symbols by changing alpha value with seen times ?
-        #### TODO lighten up the ring color
         #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
-        #### TODO port to RasPi
-        #### TODO implement GPS function with real HW
-        #### TODO implement compass function with real HW
+        #### TODO print summary -- flight number, altitude, speed, distance, category
         ##print(f"      Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
-        symbol = self.symbols[track.category]
-        dist, bearing = distanceBearing(selfLocation, trackLocation)
-        if dist > self.ringDistances[-1]:
-            logging.info(f"Track '{track.flightNumber}' out of range: {dist}")
-            return
-        position = self._calcPixelAddr(dist, bearing)
 
-        points = track.trackHistory(self.trails)
-        for pt in points:
-            x, y = self._calcPixelAddr(distanceBearing(selfPoint, targetPoint))
+        if track.distance > self.maxDistance:
+            logging.info(f"Track '{track.flightNumber}' out of range: {track.distance}")
+            return
+        trackPosition = self._calcPixelAddr(track.distance, track.azimuth)
+
+        for trailLocation, trailDistance, trailAzimuth in track.getHistory(self.trails):
+            x, y = self._calcPixelAddr(trailDistance, trailAzimuth)
 
             #### FIXME try a 1x1 or 2x2 rectangle instead
             pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
 
         angle = 0
         if track.heading:
-            startPt = pygame.math.Vector2(position)
+            startPt = pygame.math.Vector2(trackPosition)
             length = (5 + (track.speed / 10))
             angle = ((track.heading + 270) % 360)
             endPt = pygame.math.Vector2(startPt + pygame.math.Vector2(length, 0).rotate(angle))
@@ -199,19 +194,20 @@ class RadarDisplay():
         text = self.font.render(f"{track.flightNumber}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
-        textRect.midbottom = (position[0], (position[1] - 5))
+        textRect.midbottom = (trackPosition[0], (trackPosition[1] - 5))
         self.surface.blit(text, textRect)
 
         text = self.font.render(f"{track.altitude}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
-        textRect.midtop = (position[0], (position[1] + 7))
+        textRect.midtop = (trackPosition[0], (trackPosition[1] + 7))
         self.surface.blit(text, textRect)
 
         #### FIXME fix rotation of symbol to match the vector (which seems correct)
+        symbol = self.symbols[track.category]
         s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category in ROTATE_SYMBOL else symbol
-        self.surface.blit(s, ((position[0] - (s.get_width() / 2)),
-                              (position[1] - (s.get_height() / 2))))
+        self.surface.blit(s, ((trackPosition[0] - (s.get_width() / 2)),
+                              (trackPosition[1] - (s.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -246,7 +242,10 @@ class RadarDisplay():
 
             text = self.font.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
-            textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 2)))
+            if ringDistance == self.maxDistance:
+                textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 2)))
+            else:
+                textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 4)))
             self.rangeRings.blit(text, textRect)
 
     def _renderRangeRings(self):
@@ -330,13 +329,24 @@ class RadarDisplay():
         """Render the screen with the given rotation and location
           #### TODO
         """
-        #### TODO implement per-track trails, for now do them all the same
+        if self.autoRange:
+            maxDist = max([t.distance for t in tracks.values()])
+            logging.info(f"Max Track Distance: {maxDist}")
+            self._setMaxDistance(maxDist)
         self._initScreen(rotation)
+        #### TODO implement per-track trails, for now do them all the same
         for uid, track in tracks.items():
-            if self.verbose:
-                ##print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
+            if self.verbose < 2:
+                alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
+                speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
+                heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
+                try:
+                    print(f"  flight: {track.flightNumber: <8} alt: {alt}, speed: {speed}, dir: {heading}, distance: {track.distance:5.1f} cat: {track.category: >2}")
+                except:
+                    print("XXXX:", track)
+            if self.verbose >= 2:
                 print(track)
-            self._renderSymbol(track, selfLocation, track.location, self.trails)
+            self._renderSymbol(track, selfLocation, self.trails)
         pygame.display.flip()
 
     def eventHandler(self):
@@ -363,6 +373,10 @@ class RadarDisplay():
                     print("L-CTRL")
                 elif event.key == K_BACKSPACE:
                     self.trailsReset()
+                elif event.key in (K_a, ):
+                    self.autoRange = True
+                elif event.key in (K_m, ):
+                    self.autoRange = False
                 elif event.key in (K_q, ):
                     self.quit()
                     return True
