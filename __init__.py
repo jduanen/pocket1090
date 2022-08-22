@@ -11,8 +11,6 @@ import math
 import sys
 from time import sleep
 
-from geopy import distance
-
 
 def condPrint(str):
     """Conditional print
@@ -119,35 +117,3 @@ class Coordinate:
         new.x = new.x if new.x >= 0.0 else 0.0
         new.y -= other.y
         new.y = new.y if new.y >= 0.0 else 0.0
-
-def distanceBearing(startPt, endPt):
-    """Calculate and return the distance and bearing between two points
-      #### TODO
-    """
-    dist = distance.distance(startPt, endPt).km
-
-    startLat = math.radians(startPt.latitude)
-    startLon = math.radians(startPt.longitude)
-    endLat = math.radians(endPt.latitude)
-    endLon = math.radians(endPt.longitude)
-
-    deltaLon = endLon - startLon
-    if abs(deltaLon) > math.pi:
-        deltaLon = -(2.0 * math.pi - deltaLon) if deltaLon > 0.0 else (2.0 * math.pi + deltaLon)
-
-    tanStart = math.tan((startLat / 2.0) + (math.pi / 4.0))
-    tanEnd = math.tan((endLat / 2.0) + (math.pi / 4.0))
-    deltaPhi = math.log(tanEnd / tanStart)
-    bearing = ((math.degrees(math.atan2(deltaLon, deltaPhi)) + 360.0) % 360.0)
-    return dist, bearing
-
-
-'''
-def get_bearing(lat1,lon1,lat2,lon2):
-    dLon = lon2 - lon1;
-    y = math.sin(dLon) * math.cos(lat2);
-    x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon);
-    brng = np.rad2deg(math.atan2(y, x));
-    if brng < 0: brng+= 360
-    return brng
-'''
