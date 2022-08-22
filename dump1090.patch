@@ -1,0 +1,27 @@
+diff --git a/dump1090.c b/dump1090.c
+index 2b6ab09..0ba488c 100644
+--- a/dump1090.c
++++ b/dump1090.c
+@@ -548,7 +548,7 @@ static void backgroundTasks(void) {
+         next_json = now + Modes.json_interval;
+     }
+ 
+-    if (now >= next_history) {
++    if (ENABLE_HISTORY && (now >= next_history)) {
+         int rewrite_receiver_json = (Modes.json_dir && Modes.json_aircraft_history[HISTORY_SIZE-1].content == NULL);
+ 
+         free(Modes.json_aircraft_history[Modes.json_aircraft_history_next].content); // might be NULL, that's OK.
+diff --git a/dump1090.h b/dump1090.h
+index 6cd9a2e..5c729df 100644
+--- a/dump1090.h
++++ b/dump1090.h
+@@ -280,6 +280,9 @@ typedef enum {
+ #define FAUP_DEFAULT_RATE_MULTIPLIER    1.0                  // FA Upload rate multiplier
+ 
+ 
++#define ENABLE_HISTORY false
++
++
+ // Include subheaders after all the #defines are in place
+ 
+ #include "util.h"
