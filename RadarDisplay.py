@@ -160,7 +160,6 @@ class RadarDisplay():
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
         """
-        #### TODO make auto-range mode (enable/disable) -- reduce to smallest range that includes all current tracks
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
         #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
         #### FIXME improve the symbols -- bigger, more colors?
@@ -169,9 +168,6 @@ class RadarDisplay():
         #### TODO add symbols for all categories -- i.e., [A-D][0-7]
         #### TODO age symbols by changing alpha value with seen times ?
         #### TODO update README -- document inputs, document symbols, get screenshot at different ranges (with interesting traffic)
-        #### TODO print summary -- flight number, altitude, speed, distance, category
-        ##print(f"      Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
-
         if track.distance > self.maxDistance:
             logging.info(f"Track '{track.flightNumber}' out of range: {track.distance}")
             return
