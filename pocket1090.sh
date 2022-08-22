@@ -23,10 +23,6 @@ INSTALL_PATH="/opt/pocket1090/"
 
 POCKET1090_PATH="${HOME}/Code/pocket1090/"
 
-DUMP1090_PATH="${HOME}/Code2/dump1090/"
-
-DUMP1090_BIN="${DUMP1090_PATH}dump1090"
-
 VERBOSE=
 
 LOG_LEVEL="-L INFO"
@@ -35,14 +31,16 @@ LOG_FILE=
 
 JSON_FILE_PATH="/tmp/"
 
-DUMP1090_OUTPUT_FILE="/tmp/fa.txt"
-
 DISTRO=$(cat /etc/*-release | grep -w NAME | cut -d= -f2 | tr -d '"')
 
 if [ "${DISTRO}" == "Ubuntu" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE} -p ${LAT},${LON} -o 0.0,0.0,0.0"
+    DUMP1090_PATH="${HOME}/Code2/dump1090/"
+    DUMP1090_BIN="${DUMP1090_PATH}dump1090"
 elif [ "${DISTRO}" == "Raspian GNU/Linux" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
+    DUMP1090_PATH="${HOME}/Code/dump1090/"
+    DUMP1090_BIN="${DUMP1090_PATH}dump1090/package-bullseye/dump1090"
 fi
 
 export PYTHONPATH="${PYTHONPATH}:${INSTALL_PATH}"
@@ -76,7 +74,7 @@ start() {
     ${INSTALL_PATH}dump1090 --quiet --metric --write-json ${JSON_FILE_PATH} &
 
     echo "     Starting the pocket1090 application in the background"
-    echo ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} ${JSON_FILE_PATH} &
+    ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} ${JSON_FILE_PATH} &
 }
 
 stop() {
@@ -84,7 +82,7 @@ stop() {
 
     echo "    Stopping the dump1090 server"
     for KILLPID in `ps -ef | awk '$8~/^.*dump1090$/ {print $2}'`; do kill $KILLPID; done
-
+    sleep 3
     status
 }
 
