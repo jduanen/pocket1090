@@ -15,9 +15,9 @@ from pygame.locals import *
 from __init__ import * #### FIXME
 
 
+#### TODO Move all of this stuff to config, include paths to assets as well -- config is from main
 DEF_DISPLAY_DIAMETER = 480
 
-DEF_RANGE_NUM = 5
 DEF_BACKGROUND_COLOR = (32, 32, 32)
 DEF_RANGE_RING_COLOR = (128, 128, 0)
 DEF_RING_FONT_COLOR = (192, 0, 192)
@@ -39,15 +39,16 @@ MAX_SYMBOL_SIZE = 5
 ALL_CATEGORIES = (f"{letter}{number}" for letter in ("A", "B", "C", "D", "E") for number in range(8))
 TRACKED_CATEGORIES = (*ALL_CATEGORIES, "?")
 ROTATE_SYMBOL = ("A1", "A2", "A3", "A4", "A5", "A6")
-
-
-Ring = namedtuple("Ring", "radius km")
+DEF_MAX_DISTANCE = 64
+RING_DIVISORS = (8, 4, 2, 1.333333, 1)
 
 
 class RadarDisplay():
-    def __init__(self, diameter=DEF_DISPLAY_DIAMETER, rangeNumber=DEF_RANGE_NUM, colors=DEF_COLORS, fullScreen=False, verbose=False):
+    def __init__(self, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
+        if maxDistance < 1:
+            maxDistance = 1
+            logging.warning("Minimum distance clamped to 1Km")
         self.diameter = diameter
-        self.rangeNumber = rangeNumber
         self.bgColor = colors['bgColor']
         self.ringColor = colors['ringColor']
         self.ringFontColor = colors['ringFontColor']
@@ -59,15 +60,8 @@ class RadarDisplay():
         self.verbose = verbose
 
         self.center = Coordinate((diameter / 2), (diameter / 2))
-        self.rings = [
-            (Ring((self.diameter / 16), 0.25), Ring((self.diameter / 8), 0.5), Ring((self.diameter / 4), 1.0), Ring((self.diameter / 2), 2.0)),
-            (Ring((self.diameter / 16), 0.5), Ring((self.diameter / 8), 1.0), Ring((self.diameter / 4), 2.0), Ring((self.diameter / 2), 4.0)),
-            (Ring((self.diameter / 16), 1.0), Ring((self.diameter / 8), 2.0), Ring((self.diameter / 4), 4.0), Ring((self.diameter / 2), 8.0)),
-            (Ring((self.diameter / 16), 2.0), Ring((self.diameter / 8), 4.0), Ring((self.diameter / 4), 8.0), Ring((self.diameter / 2), 16.0)),
-            (Ring((self.diameter / 16), 4.0), Ring((self.diameter / 8), 8.0), Ring((self.diameter / 4), 16.0), Ring((self.diameter / ((2 * 32) / 24)), 24.0), Ring((self.diameter / 2), 32.0)),
-            (Ring((self.diameter / 16), 8.0), Ring((self.diameter / 8), 16.0), Ring((self.diameter / 4), 32.0), Ring((self.diameter / ((2 * 64) / 48)), 48.0), Ring((self.diameter / 2), 64.0)),
-            (Ring((self.diameter / 16), 16.0), Ring((self.diameter / 8), 32.0), Ring((self.diameter / 4), 64.0), Ring((self.diameter / ((2 * 128) / 96)), 96.0), Ring((self.diameter / 2), 128.0))
-        ]
+        self.ringRadii = [int(self.diameter / (2 * n)) for n in RING_DIVISORS]
+
         self.trails = 0
 
         pygame.init()
@@ -83,15 +77,26 @@ class RadarDisplay():
         self.surface = pygame.display.set_mode((self.diameter, self.diameter), flags)
         pygame.display.set_caption('Radar Display')
         self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
+        self.rangeRings = pygame.Surface((self.diameter, self.diameter))
 
-        self.rotation = 0
-        self.selectedRange = rangeNumber
-        self.rangeSpec = self.rings[rangeNumber]
-        self.rangeRings = self._createRangeRings()
-        self.selfSymbol = self._createSelfSymbol()
-        self.symbols = self._createSymbols()
+        self.autoRange = True
 
-        self._initScreen()
+        self._setMaxDistance(maxDistance)
+        self._createSelfSymbol()
+        self._createSymbols()
+
+        self._initScreen(None)
+
+    def _setMaxDistance(self, maxDistance):
+        """ #### TODO
+          force maxDistance to the next higher power of two, clips min distance at 1Km, no upper limit
+          also sets ring distances and recreates/labels the range rings
+          N.B. Distances are in Km
+        """
+        maxD = maxDistance if maxDistance >= 1 else 1
+        self.maxDistance = 1 << maxD.bit_length()
+        self.ringDistances = [int(self.maxDistance / d) for d in RING_DIVISORS]
+        self._createRangeRings()
 
     def _calcPixelAddr(self, dist, bearing):
         """Map the given a location (lat,lon) calculate and return the screen
@@ -99,16 +104,16 @@ class RadarDisplay():
           #### TODO
           assumes trackLocation isn't off the screen
         """
-        metersPerPixel = (self.rangeSpec[-1].km * 1000) / self.diameter
+        metersPerPixel = (self.ringDistances[-1] * 1000.0) / (self.diameter / 2.0)
         if self.verbose > 1:
-            print(f"      Dist: {dist:.2f}, Bearing: {bearing:.2f}\n")
+            print(f"      Dist: {dist:.2f}, Bearing: {bearing:.2f}")
         distPx = (dist * 1000) / metersPerPixel
         x = (distPx * math.sin(math.radians(bearing))) + (self.diameter / 2)
         y = -(distPx * math.cos(math.radians(bearing))) + (self.diameter / 2)
         return (x, y)
 
     def _createSymbols(self):
-        """Draw all symbols
+        """Create all symbols and draw on the symbols surface
           #### TODO
         """
         delta = MAX_SYMBOL_SIZE
@@ -146,11 +151,7 @@ class RadarDisplay():
             surface.set_colorkey(self.bgColor)
             surface.blit(img, (0,0))
             symbols[cat] = surface
-        return symbols
-
-    def _calcPixelCoordinates(self, selfPoint, targetPoint):
-        dist, bearing = distanceBearing(selfPoint, targetPoint)
-        return self._calcPixelAddr(dist, bearing)
+        self.symbols = symbols
 
     def _renderSymbol(self, track, selfLocation, trackLocation, trail=0):
         """Render the named symbol at the given coordinate, with the appropriately sized speed and heading vector
@@ -175,14 +176,15 @@ class RadarDisplay():
         ##print(f"      Category: {track.category}, Flight: {track.flightNumber}, Altitude: {track.altitude}, Speed: {track.speed}")
         symbol = self.symbols[track.category]
         dist, bearing = distanceBearing(selfLocation, trackLocation)
-        if dist > self.rangeSpec[-1].km:
+        if dist > self.ringDistances[-1]:
             logging.info(f"Track '{track.flightNumber}' out of range: {dist}")
             return
         position = self._calcPixelAddr(dist, bearing)
 
         points = track.trackHistory(self.trails)
         for pt in points:
-            x, y = self._calcPixelCoordinates(selfLocation, pt)
+            x, y = self._calcPixelAddr(distanceBearing(selfPoint, targetPoint))
+
             #### FIXME try a 1x1 or 2x2 rectangle instead
             pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
 
@@ -223,28 +225,29 @@ class RadarDisplay():
         pygame.draw.line(selfSymbol, self.selfColor, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
         pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((0.5 * delta), (0.5 * delta)))
         pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((1.5 * delta), (0.5 * delta)))
-        return selfSymbol
+        self.selfSymbol = selfSymbol
 
-    def _renderSelfSymbol(self):
-        s = pygame.transform.rotate(self.selfSymbol, self.rotation)
+    def _renderSelfSymbol(self, rotation):
+        if rotation is None:
+            s = self.selfSymbol
+        else:
+            s = pygame.transform.rotate(self.selfSymbol, rotation)
         self.surface.blit(s, ((self.center.x - (s.get_width() / 2)),
                               (self.center.y - (s.get_height() / 2))))
 
     def _createRangeRings(self):
-        """Draw the labeled range rings for the selected range onto the rangeRings surface
+        """Draw and label the range rings onto the rangeRings surface
           #### TODO
         """
-        rangeRings = pygame.Surface((self.diameter, self.diameter))
-        rangeRings.fill(self.bgColor)
-        rangeRings.set_colorkey(self.bgColor)
-        for ring in self.rangeSpec:
-            pygame.draw.circle(rangeRings, self.ringColor, astuple(self.center), ring.radius, 1)
+        self.rangeRings.fill(self.bgColor)
+        self.rangeRings.set_colorkey(self.bgColor)
+        for ringRadius, ringDistance in zip(self.ringRadii, self.ringDistances):
+            pygame.draw.circle(self.rangeRings, self.ringColor, astuple(self.center), ringRadius, 1)
 
-            text = self.font.render(f"{ring.km / 2}km", True, self.ringFontColor, self.bgColor)
+            text = self.font.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
-            textRect.center = (self.center.x, (self.center.y - ring.radius + (textRect.h / 2)))
-            rangeRings.blit(text, textRect)
-        return rangeRings
+            textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 2)))
+            self.rangeRings.blit(text, textRect)
 
     def _renderRangeRings(self):
         """Render the range rings onto the display surface
@@ -253,43 +256,50 @@ class RadarDisplay():
         self.surface.blit(self.rangeRings, ((self.center.x - (self.rangeRings.get_width() / 2)),
                                             (self.center.y - (self.rangeRings.get_height() / 2))))
 
-    def _initScreen(self):
+    def _initScreen(self, rotation):
         """Clear the screen and draw the static elements (i.e., range rings and self symbol)
           #### TODO
         """
         self.surface.fill(self.bgColor)
-        self._renderSelfSymbol()
         self._renderRangeRings()
+        self._renderSelfSymbol(rotation)
 
-    def numberRanges(self):
-        """Return the number of selectable ranges
+    def getRange(self):
+        """Return the current max distance (in Km)
           #### TODO
         """
-        return len(self.rings)
+        return self.maxDistance
+
+    def setRange(self, maxDistance):
+        """Set the current max distance (in Km)
+          #### TODO
+        """
+        if maxDistance <= 0:
+            raise ValueError("Invalid distance, must be greater than zero")
+        if maxDistance < 1:
+            logging.warning("Minimum distance clamped to 1Km")
+        self.autoRange = False
+        self._setMaxDistance(maxDistance)
 
     def rangeUp(self):
-        """Select the next larger range setting
+        """Select the next larger (power of two) range setting
           #### TODO
         """
-        self.selectRange(self.selectedRange + 1)
+        self.autoRange = False
+        self._setMaxDistance(self.maxDistance)
 
     def rangeDown(self):
-        """Select the next smaller range setting
+        """Select the next smaller (power of two) range setting
           #### TODO
         """
-        self.selectRange(self.selectedRange - 1)
+        self.autoRange = False
+        self._setMaxDistance((self.maxDistance - 1) >> 1)
 
-    def selectRange(self, rangeNumber):
-        """Select the scale of the display and create the associated labeled range rings
+    def autoRange(self, enable=True):
+        """Enable/disable the auto-ranging function
           #### TODO
         """
-        rangeNumber = rangeNumber if rangeNumber >= 0 else 0
-        rangeNumber = rangeNumber if rangeNumber < len(self.rings) else (len(self.rings) - 1)
-        if rangeNumber == self.selectedRange:
-            return
-        self.selectedRange = rangeNumber
-        self.rangeSpec = self.rings[rangeNumber]
-        self.rangeRings = self._createRangeRings()
+        self.autoRange = True
 
     def trailsLess(self):
         """ #### TODO
@@ -321,8 +331,7 @@ class RadarDisplay():
           #### TODO
         """
         #### TODO implement per-track trails, for now do them all the same
-        self.rotation = rotation
-        self._initScreen()
+        self._initScreen(rotation)
         for uid, track in tracks.items():
             if self.verbose:
                 ##print(f"  Track {uid}: flight: {track.flightNumber} alt: {track.altitude}, speed: {track.speed}, dir: {track.heading}, cat: {track.category}")
