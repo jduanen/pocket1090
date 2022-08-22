@@ -7,6 +7,7 @@
 from dataclasses import dataclass
 
 from geopy import Point
+from geopy import distance as geoDistance
 
 from __init__ import * #### FIXME
 
@@ -17,26 +18,60 @@ TRACK_DEFS = {'hex': "unknown", 'flight': "n/a", 'alt_geom': None, 'gs': None, '
 
 @dataclass
 class TrackSpec():
-    uniqueId: str       # hex: 24-bit ICAO id, six hex digits, non-ICAO addresses start with '~'
-    flightNumber: str   # flight: callsign, the flight name or aircraft registration as 8 chars
-    altitude: int       # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
-    speed: float        # gs: ground speed in knots
-    heading: float      # track: true track over ground in degrees (0-359)
-    category: str       # category: emitter category, identifies aircraft classes (values "A0"-"D7")
-    lat: float          # lat: aircraft position in decimal degrees
-    lon: float          # lon: aircraft position in decimal degrees
-    seenPos: float      # seen_pos: how many seconds before "now" the position was last updated
-    seen: float         # seen: how many seconds before "now" a message was last received from this aircraft
-    rssi: float         # rssi: recent average RSSI (in dbFS); this will always be negative
-    timestamp: float    # when the aircraft.json file was written (in Unix epoch time)
+    uniqueId: str           # hex: 24-bit ICAO id, six hex digits, non-ICAO addresses start with '~'
+    flightNumber: str       # flight: callsign, the flight name or aircraft registration as 8 chars
+    altitude: int           # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
+    speed: float            # gs: ground speed in knots
+    heading: float          # track: true track over ground in degrees (0-359)
+    category: str           # category: emitter category, identifies aircraft classes (values "A0"-"D7")
+    lat: float              # lat: aircraft position in decimal degrees
+    lon: float              # lon: aircraft position in decimal degrees
+    seenPos: float          # seen_pos: how many seconds before "now" the position was last updated
+    seen: float             # seen: how many seconds before "now" a message was last received from this aircraft
+    rssi: float             # rssi: recent average RSSI (in dbFS); this will always be negative
+    timestamp: float        # when the aircraft.json file was written (in Unix epoch time)
     location: (float,float) # (lat, lon) tuple as a geopy Point object
+    distance: float         # distance of aircraft from current position in Km
+    azimuth: float          # direction from current position to aircraft in degrees (0-359)
 
 
 class Track():
-    def __init__(self, timestamp, **kwargs):
+    @staticmethod
+    def distanceAndAzimuth(startPt, endPt):
+        """Calculate and return the distance and bearing between two points
+          #### TODO
+        """
+        distance = geoDistance.distance(startPt, endPt).km
+
+        startLat = math.radians(startPt.latitude)
+        startLon = math.radians(startPt.longitude)
+        endLat = math.radians(endPt.latitude)
+        endLon = math.radians(endPt.longitude)
+
+        deltaLon = endLon - startLon
+        if abs(deltaLon) > math.pi:
+            deltaLon = -(2.0 * math.pi - deltaLon) if deltaLon > 0.0 else (2.0 * math.pi + deltaLon)
+
+        tanStart = math.tan((startLat / 2.0) + (math.pi / 4.0))
+        tanEnd = math.tan((endLat / 2.0) + (math.pi / 4.0))
+        deltaPhi = math.log(tanEnd / tanStart)
+        azimuth = ((math.degrees(math.atan2(deltaLon, deltaPhi)) + 360.0) % 360.0)
+        return distance, azimuth
+
+    '''
+    def get_bearing(lat1,lon1,lat2,lon2):
+        dLon = lon2 - lon1;
+        y = math.sin(dLon) * math.cos(lat2);
+        x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon);
+        brng = np.rad2deg(math.atan2(y, x));
+        if brng < 0: brng+= 360
+        return brng
+    '''
+
+    def __init__(self, timestamp, selfLocation, **kwargs):
         self.history = []
         self.currentTrack = None
-        self.update(timestamp, **kwargs)
+        self.update(timestamp, selfLocation, **kwargs)
 
     def __repr__(self):
         s = f"uniqueId: "
@@ -98,7 +133,7 @@ class Track():
         s += f", location: {self.location}"
         return s
 
-    def update(self, timestamp, **kwargs):
+    def update(self, timestamp, selfLocation, **kwargs):
         """#### TODO
         """
         self.uniqueId = kwargs.get('hex', TRACK_DEFS['hex'])
@@ -114,24 +149,28 @@ class Track():
         self.rssi = kwargs.get('rssi', TRACK_DEFS['rssi'])
         self.timestamp = timestamp
         self.location = Point(self.lat, self.lon)
+        self.distance, self.azimuth = Track.distanceAndAzimuth(selfLocation, self.location)
 
         if self.currentTrack:
             self.history.append(self.currentTrack)
         self.currentTrack = TrackSpec(self.uniqueId, self.flightNumber, self.altitude,
                                       self.speed, self.heading, self.category, self.lat,
                                       self.lon, self.seenPos, self.seen, self.rssi,
-                                      self.timestamp, self.location)
+                                      self.timestamp, self.location, self.distance,
+                                      self.azimuth)
 
     def currentTrack(self):
         """#### TODO
         """
         return self.currentTrack
 
-    def trackHistory(self, depth, collapse=True):
-        """Return list of locations in order from newest to oldest, up to the
-            given depth (0 means none of them and None meals all of them),
-            skipping the current location and (optionally) collapsing identical
-            sequential locations into one location.
+    def getHistory(self, depth, collapse=True):
+        """ #### TODO
+          Return list of tuple of (location, distance, azimuth) in order from
+            newest to oldest, up to the given depth (0 means none of them and
+            None means all of them), skipping the current location and
+            (optionally) collapsing identical sequential locations into one
+            tuple.
         """
         if depth == 0:
             return []
@@ -140,5 +179,5 @@ class Track():
         history = self.history[-2::-1]
         if numPts > 0:
             history = history[0:numPts]
-        points = [t.location for n,t in enumerate(history) if (((n < 1) or (t.location != history[n - 1].location)) or not collapse)]
-        return points[1:depth]
+        trails = [(t.location, t.distance, t.azimuth) for n,t in enumerate(history) if (((n < 1) or (t.location != history[n - 1].location)) or not collapse)]
+        return trails[1:depth]
