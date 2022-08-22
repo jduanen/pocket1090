@@ -107,15 +107,6 @@ def run(options):
             #### TODO log these to a file
             print(f"\a\nUnusual Vehicles: {oddVehicles}\n\a")
 
-        for uniqueId, info in aircraftInfo.items():
-            if uniqueId in tracks.keys():
-                tracks[uniqueId].update(ts, **info)
-                logging.debug(f"Updated track '{uniqueId}'")
-            else:
-                tracks[uniqueId] = Track(ts, **info)
-                logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
-        uids = aircraftInfo.keys()
-        tracks = {k: v for k,v in tracks.items() if k in uids}
         if options.orientation is None:
             heading, roll, pitch = compass.getEulerAngles()
         else:
@@ -127,6 +118,17 @@ def run(options):
             selfLocation = options.position
         if options.verbose:
             print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}, roll={roll}, pitch={pitch}")
+
+        for uniqueId, info in aircraftInfo.items():
+            if uniqueId in tracks.keys():
+                tracks[uniqueId].update(ts, selfLocation, **info)
+                logging.debug(f"Updated track '{uniqueId}'")
+            else:
+                tracks[uniqueId] = Track(ts, selfLocation, **info)
+                logging.debug(f"New Track {uniqueId}: {tracks[uniqueId]}")
+
+        uids = aircraftInfo.keys()
+        tracks = {k: v for k,v in tracks.items() if k in uids}
         screen.render(heading, selfLocation, tracks)
     screen.quit()
     print("DONE")
