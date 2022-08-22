@@ -40,7 +40,7 @@ if [ "${DISTRO}" == "Ubuntu" ]; then
 elif [ "${DISTRO}" == "Raspbian GNU/Linux" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
     DUMP1090_PATH="${HOME}/Code/dump1090/"
-    DUMP1090_BIN="${DUMP1090_PATH}dump1090/package-bullseye/dump1090"
+    DUMP1090_BIN="${DUMP1090_PATH}package-bullseye/dump1090"
 fi
 
 export PYTHONPATH="${PYTHONPATH}:${INSTALL_PATH}"
