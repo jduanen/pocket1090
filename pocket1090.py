@@ -127,6 +127,7 @@ def run(options):
             selfLocation = options.position
         if options.verbose:
             print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}, roll={roll}, pitch={pitch}")
+        #### TODO add distance and bearing to each track
         screen.render(heading, selfLocation, tracks)
     screen.quit()
     print("DONE")
