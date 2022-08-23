@@ -398,7 +398,7 @@ class RadarDisplay():
                     self.autoRange = True
                 elif event.key in (K_m, ):
                     self.autoRange = False
-                elif event.key in (K_?, K_m):
+                elif event.key in (K_h):
                     print("Keyboard Inputs:")
                     print("  Left Arrow: reduce maximum number of trail points displayed")
                     print("  Right Arrow: increase maximum number of trail points displayed")
