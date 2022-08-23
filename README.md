@@ -3,6 +3,8 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 **WIP**
 
+![Desktop Display 5](screen5.png)
+
 ## HW
 
 ### Raspberry Pi Zero 2W
@@ -214,8 +216,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 ![Desktop Display 3](screen3.png)
 
 ![Desktop Display 4](screen4.png)
-
-![Desktop Display 5](screen5.png)
 
 ------------------------------------------------------------------------------
 
