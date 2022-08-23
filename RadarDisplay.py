@@ -7,6 +7,7 @@
 from collections import namedtuple
 from dataclasses import astuple
 import logging
+from math import floor
 import os
 
 import pygame
@@ -63,7 +64,7 @@ class RadarDisplay():
         self.fullScreen = fullScreen
         self.verbose = verbose
 
-        self.center = Coordinate((diameter / 2), (diameter / 2))
+        self.center = Coordinate(floor(diameter / 2), floor(diameter / 2))
         self.ringRadii = [int(self.diameter / (2 * n)) for n in RING_DIVISORS]
 
         self.trails = 0
@@ -112,8 +113,8 @@ class RadarDisplay():
         if self.verbose > 1:
             print(f"      Distance: {distance:.2f}, Azimuth: {azimuth:.2f}")
         distPx = (distance * 1000) / metersPerPixel
-        x = (distPx * math.sin(math.radians(azimuth))) + (self.diameter / 2)
-        y = -(distPx * math.cos(math.radians(azimuth))) + (self.diameter / 2)
+        x = (distPx * math.sin(math.radians(azimuth))) + (self.diameter / 2.0)
+        y = -(distPx * math.cos(math.radians(azimuth))) + (self.diameter / 2.0)
         return (x, y)
 
     def _createSymbols(self):
@@ -128,7 +129,8 @@ class RadarDisplay():
                 s = pygame.Surface((diameter, diameter))
                 s.fill(self.bgColor)
                 s.set_colorkey(self.bgColor)
-                pygame.draw.circle(s, (0, 148, 255), ((diameter / 2), (diameter / 2)), (diameter / 2))
+                d = floor(diameter / 2)
+                pygame.draw.circle(s, (0, 148, 255), (d, d), d)
                 symbols[cat] = s
                 continue
             if cat == "A0":
@@ -136,7 +138,8 @@ class RadarDisplay():
                 s = pygame.Surface((diameter, diameter))
                 s.fill(self.bgColor)
                 s.set_colorkey(self.bgColor)
-                pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
+                d = floor(diameter / 2)
+                pygame.draw.circle(s, self.vectorColor, (d, d), d, width=1)
                 symbols[cat] = s
                 continue
             filePath = os.path.join(self.assetsPath, f"{cat}.png")
@@ -162,7 +165,7 @@ class RadarDisplay():
           If symbolName is None, then use the unknown symbol
           If speed is None, use a min-length vector
           If heading is None, don't add a vector
-          Add flightNumber and altitude as text next to the symbol if they exist, else use "-" character
+          Add flightNumber and altitude as text next to the symbol
         """
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
         #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
@@ -203,9 +206,9 @@ class RadarDisplay():
 
         #### FIXME fix rotation of symbol to match the vector (which seems correct)
         symbol = self.symbols[track.category]
-        s = pygame.transform.rotate(symbol, ((angle + 180) % 360)) if track.category in ROTATE_SYMBOL else symbol
-        self.surface.blit(s, ((trackPosition[0] - (s.get_width() / 2)),
-                              (trackPosition[1] - (s.get_height() / 2))))
+        s = pygame.transform.rotate(symbol, angle) if track.category in ROTATE_SYMBOL else symbol
+        self.surface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
+                              (trackPosition[1] - floor(s.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -226,8 +229,8 @@ class RadarDisplay():
             s = self.selfSymbol
         else:
             s = pygame.transform.rotate(self.selfSymbol, rotation)
-        self.surface.blit(s, ((self.center.x - (s.get_width() / 2)),
-                              (self.center.y - (s.get_height() / 2))))
+        self.surface.blit(s, ((self.center.x - floor(s.get_width() / 2)),
+                              (self.center.y - floor(s.get_height() / 2))))
 
     def _createRangeRings(self):
         """Draw and label the range rings onto the rangeRings surface
@@ -241,17 +244,17 @@ class RadarDisplay():
             text = self.font.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
             if ringDistance == self.maxDistance:
-                textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 2)))
+                textRect.center = (self.center.x, (self.center.y - ringRadius + floor(textRect.h / 2)))
             else:
-                textRect.center = (self.center.x, (self.center.y - ringRadius + (textRect.h / 4)))
+                textRect.center = (self.center.x, (self.center.y - ringRadius + floor(textRect.h / 4)))
             self.rangeRings.blit(text, textRect)
 
     def _renderRangeRings(self):
         """Render the range rings onto the display surface
           #### TODO
         """
-        self.surface.blit(self.rangeRings, ((self.center.x - (self.rangeRings.get_width() / 2)),
-                                            (self.center.y - (self.rangeRings.get_height() / 2))))
+        self.surface.blit(self.rangeRings, ((self.center.x - floor(self.rangeRings.get_width() / 2)),
+                                            (self.center.y - floor(self.rangeRings.get_height() / 2))))
 
     def _initScreen(self, rotation):
         """Clear the screen and draw the static elements (i.e., range rings and self symbol)
