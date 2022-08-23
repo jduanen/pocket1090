@@ -238,7 +238,7 @@ class RadarDisplay():
         if rotation is None:
             s = self.selfSymbol
         else:
-            s = pygame.transform.rotate(self.selfSymbol, rotation)
+            s = pygame.transform.rotate(self.selfSymbol, -rotation)
         self.surface.blit(s, ((self.center.x - floor(s.get_width() / 2)),
                               (self.center.y - floor(s.get_height() / 2))))
 
