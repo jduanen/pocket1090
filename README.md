@@ -38,7 +38,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 ### RTLSDI USB Dongle
 
 * FlightAware Pro-Stick Plus: https://flightaware.store/products/pro-stick-plus
-  - has built-in 1090MHz bandpass filter
+  - built-in 1090MHz bandpass filter
   - SMA F connector
 
 ### GPS Receiver
@@ -68,7 +68,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - GND
   - VIN (in)
   - PPS (out)
-* Raspi Connection
+* RasPi Connection
   - GPIO 4:  ENB
   - GPIO 14: RX
   - GPIO 15: TX
@@ -106,7 +106,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - P1: n/c
   - INT (out): interrupt on motion, 3V
   - ADR (in): I2C address selection, 1=0x29, 0=0x28, 3V
-* Raspi Connection
+* RasPi Connection
   - 3.3V:   VIN
   - GND:    GND
   - GPIO 2: SDA
@@ -115,26 +115,24 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 ### Battery and Charger
 
-**TBD**
+*TBD*
 
 ### External antenna
 
-**TBD**
+*TBD*
 
 ## SW
 
 ### Raspberry Pi Zero 2W
 
-#### Prepare SW Environment
-* update pygame
-  - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
-  - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
-* must install 2.0 pygame: pip3 install pygame==2
-* also: sudo apt-get install libsdl2-image-2.0-0
-
-### LCD Display
-
-### RTLSDI USB Dongle
+* Prepare SW Environment
+  - update pygame
+    * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+    * RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
+  - install 2.x pygame
+    * 'pip3 install pygame==2'
+  - also install missing package:
+    * 'sudo apt-get install libsdl2-image-2.0-0'
 
 ### GPS Receiver
 
@@ -152,95 +150,72 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 ### 9DoF IMU
 
-
-### RasPi Notes
-* IMU
-  - set up I2C for IMU
-    * I2C HW: SCL=3, SDA=2
-    * Raspi doesn't do I2C clock stretching properly so have to do something else
-      - could switch and use the IMU in serial mode (with the second HW UART?)
-    * replace i2c device with bit-banging driver (using same pins) via device tree overlay
-      - sudo raspi-config
-      - Interfaces->I2C -- disable ('<NO>')
-      - sudo cp /boot/config.txt /boot/config.txt.orig
-      - sudo ex /boot/config.txt
-        * add: dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=02,i2c_gpio_scl=03
-      - reboot and "ls -l /dev/i2c*" look for /dev/i2c-3
-        * crw-rw---- 1 root i2c 89,  3 Dec 1 18:30 /dev/i2c-3
-      - verify with: i2cdetect -y -r 3
-        * should show BNO055 at address 28
-    * alternatively use second HW UART and strap BNO055 to use serial (instead of I2C)
-  - sudo pip3 install Adafruit-Blinka
-    import board
-    import busio
-    i2c = busio.I2C(board.SCL, board.SDA)
+* RasPi didn't handle I2C clock-stretching properly
+  - seems to work fine with PiZero V2
+* install Adafruit BNO055 library from PyPi
   - sudo pip3 install adafruit-bno055
-  - sudo pip3 install adafruit-bno055
-  - from Adafruit_BNO055 import BNO055
-    bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
-    if not bno.begin():
-      print("ERROR: failed to init")
-  - consider getting this: http://gps-pie.com/L80_slice.htm
 
-* dump1090-fa
-  - get and build dump1090-fa
-    * git clone git@github.com:flightaware/dump1090.git
-    * sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
-    * ./prepare-build.sh bullseye
-    * cd package-bullseye
-    * dpkg-buildpackage -b --no-sign
-  - run dump1090-fa
-    #### FIXME figure out how much to write and where
-    * /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+### dump1090-fa
 
-* run pocket1090
-  - sudo apt install libsdl2-ttf-2*
-  - pip3 install geopy gps pygame pyYaml
-  - ./pocket1090.py -v /tmp -L INFO
+* set up environment
+  - 'sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev'
+* clone dump1090-fa
+  - 'git clone git@github.com:flightaware/dump1090.git'
+* patch dump1090-fa to not write history files
+  - e.g., as defined in dump1090.patch
+* build modified dump1090-fa
+  - './prepare-build.sh bullseye'
+  - 'cd package-bullseye'
+  - 'dpkg-buildpackage -b --no-sign'
+* run dump1090-fa
+  - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
 
+### pocket1090
 
+* set up environment
+  - 'sudo apt install libsdl2-ttf-2*'
+  - 'pip3 install -r requirements.txt'
+* run pocket1090 application
+  - './pocket1090.py -v /tmp -L INFO -f'
+  - run in full-screen mode
+* Key Features
+  - Range
+    * Automatic: automatically select smallest (power of two Km) range that includes all current tracks
+    * Manual: increase/decrease range in powers of two Km distances
+  - Trails (i.e., position points)
+    * show position point history
+    * can select no points, all points, or just the last 'N' points
+  - Aging of Tracks
+    * enable/disable fade-out with time since last seen
+  - Summary
+    * list of current tracks, sorted by distance from receiver
+    * includes: flight number, altitude, speed, direction, distance, azimuth, and category
+  - Details
+    * popup with detailed information on selected track
+    * all current information about the track
+  - Filters
+    * inside/outside altitude/speed range
+    * categories
+    * flight number (prefix)
+    * uniqueIds
+    * greater-/less-than distance
+    * heading
 
+### pocket1090.sh
 
+* script to install, run, stop, get the status, and remove installation of pocket1090 application
 
 ### Screenshots
 
-#### Max Range
 ![Desktop Display 1](screen1.png)
 
-#### Mid Range, Trails On
 ![Desktop Display 2](screen2.png)
 
-#### Max Range, Trails On
 ![Desktop Display 3](screen3.png)
 
-### Key Features
+![Desktop Display 4](screen4.png)
 
-#### Range
-
-* Manual: increase/decrease range
-* Automatic: automatically select smallest range that includes all current tracks
-
-#### Trails (i.e., position points)
-
-* show last 'N' position points (0 = no trails)
-
-#### Aging
-
-* enable/disable fade-out with time since last seen
-
-#### Focus
-
-* single track
-* additional information
-
-#### Filters
-
-* inside/outside altitude/speed range
-* categories
-* flight number (prefix)
-* uniqueIds
-* greater-/less-than distance
-* heading
+![Desktop Display 5](screen5.png)
 
 ------------------------------------------------------------------------------
 
@@ -291,8 +266,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - touch icon to get additional info pop-up
     * e.g., squawk, emergency, altitude, RSSI, roll, category, nav mode, seen, *_rate
   - age tracks by dimming them -- larger 'seen' value, the dimmer the track
-* maybe a shaft-encoder or tiny joystick as additional input
-* on-board LiPo charger and USB-C connection (power and RasPi interface)
 * poll <path>/aircraft.json for data
 * read <path>/receiver.json at startup to get receiver info (e.g., selected update rate)
 * enable "track mode" where icon(s) leave slug trail behind?
@@ -321,6 +294,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 ## TODO
 
 * Figure out what kind of input device to use -- e.g., track point, touchscreen, shaft-encoder
+  - use touch panel -- figure out how to make it work on Ubuntu
 * Add UTC clock display (from GPS)
 * Add map overlays?
   - get map rectangles from https://openstreetmap.org
@@ -341,9 +315,8 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - create different sized ones for different displays
   - use color and shape better
   - rotate (or not) properly
-  - store different types in different places, put path in config
 
---------------
+-----------------------------------------------------------------------------------------
 
 * egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
   - Avg RSSI: -10.8692 dBFS
@@ -433,4 +406,30 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
           plt.show()
       - ????
 
+* IMU
+  - set up I2C for IMU
+    * I2C HW: SCL=3, SDA=2
+    * Raspi doesn't do I2C clock stretching properly so have to do something else
+      - could switch and use the IMU in serial mode (with the second HW UART?)
+    * replace i2c device with bit-banging driver (using same pins) via device tree overlay
+      - sudo raspi-config
+      - Interfaces->I2C -- disable ('<NO>')
+      - sudo cp /boot/config.txt /boot/config.txt.orig
+      - sudo ex /boot/config.txt
+        * add: dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=02,i2c_gpio_scl=03
+      - reboot and "ls -l /dev/i2c*" look for /dev/i2c-3
+        * crw-rw---- 1 root i2c 89,  3 Dec 1 18:30 /dev/i2c-3
+      - verify with: i2cdetect -y -r 3
+        * should show BNO055 at address 28
+    * alternatively use second HW UART and strap BNO055 to use serial (instead of I2C)
+  - sudo pip3 install Adafruit-Blinka
+    import board
+    import busio
+    i2c = busio.I2C(board.SCL, board.SDA)
 
+  - sudo pip3 install adafruit-bno055
+  - from Adafruit_BNO055 import BNO055
+    bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
+    if not bno.begin():
+      print("ERROR: failed to init")
+  - consider getting this: http://gps-pie.com/L80_slice.htm
