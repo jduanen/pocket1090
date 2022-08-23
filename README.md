@@ -44,7 +44,7 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
   - 'a': auto-range -- enable auto-range mode
   - 'm': manual range -- disable auto-range mode
   - 'q': quit -- exit the application
-  - 'h | ?': print the keyboard inputs
+  - 'h': print the keyboard inputs
 
 ## SW
 
