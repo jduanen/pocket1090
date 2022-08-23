@@ -167,10 +167,11 @@ class RadarDisplay():
           If heading is None, don't add a vector
           Add flightNumber and altitude as text next to the symbol
         """
+        #### FIXME make symbols overwrite tracks (aot the converse, which is happening now)
+        #### FIXME make rotation of symbol match vector
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
         #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
-        #### FIXME improve the symbols -- bigger, more colors?
-        #### FIXME make rotation of symbol match vector
+        #### TODO improve the symbols -- bigger, more colors?
         #### TODO consider scaling symbols with range?
         #### TODO add symbols for all categories -- i.e., [A-D][0-7]
         #### TODO age symbols by changing alpha value with seen times ?
@@ -397,6 +398,17 @@ class RadarDisplay():
                     self.autoRange = True
                 elif event.key in (K_m, ):
                     self.autoRange = False
+                elif event.key in (K_?, K_m):
+                    print("Keyboard Inputs:")
+                    print("  Left Arrow: reduce maximum number of trail points displayed")
+                    print("  Right Arrow: increase maximum number of trail points displayed")
+                    print("  Home: display no trail points")
+                    print("  End: display all trail points")
+                    print("  Up Arrow: increase the max distance to the next power of two Km")
+                    print("  Down Arrow: decrease the max distance to the next power of two Km")
+                    print("  'a': auto-range -- enable auto-range mode")
+                    print("  'm': manual range -- disable auto-range mode")
+                    print("  'q': quit -- exit the application")
                 elif event.key in (K_q, ):
                     self.quit()
                     return True
