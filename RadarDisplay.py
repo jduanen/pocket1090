@@ -327,22 +327,24 @@ class RadarDisplay():
         """
         if self.autoRange:
             maxDist = max([t.distance for t in tracks.values()])
-            logging.info(f"Max Track Distance: {maxDist}")
+            logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
             self._setMaxDistance(maxDist)
         self._initScreen(rotation)
         #### TODO implement per-track trails, for now do them all the same
+        if self.verbose:
+            print("flight      alt.  speed   dir.  dist. cat.")
+            print("-------- ------- ------  ----- ------ ----")
         for uid, track in tracks.items():
             if self.verbose < 2:
                 alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
                 speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
                 heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
-                try:
-                    print(f"  flight: {track.flightNumber: <8} alt: {alt}, speed: {speed}, dir: {heading}, distance: {track.distance:5.1f} cat: {track.category: >2}")
-                except:
-                    print("XXXX:", track)
+                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.category: >2}")
             if self.verbose >= 2:
                 print(track)
             self._renderSymbol(track, selfLocation, self.trails)
+        if self.verbose:
+            print("")
         pygame.display.flip()
 
     def eventHandler(self):

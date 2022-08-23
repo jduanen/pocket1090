@@ -72,8 +72,6 @@ def run(options):
             running = False
             continue
         ts = os.stat(aircraftFile).st_mtime
-        if options.verbose:
-            print("TS: ", ts)
         while ts == lastTs:
             ts = os.stat(aircraftFile).st_mtime
             time.sleep(0.5)
@@ -94,8 +92,8 @@ def run(options):
         ##logging.debug(f"Current number of aircraft: {len(aircraftInfo)}")
         if options.verbose:
             currentFlightNums = [a['flight'] for a in aircraftInfo.values() if 'flight' in a]
-            if currentFlightNums and options.verbose:
-                print(f"Flight #s ({len(currentFlightNums)}): {currentFlightNums}")
+            if currentFlightNums:
+                logging.info(f"Flights ({len(currentFlightNums)}): {currentFlightNums}")
 
         #### TODO detect "interesting" cases (e.g., emergency, other than "A?") and save them
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
@@ -116,8 +114,7 @@ def run(options):
         else:
             curTime = datetime.utcnow().isoformat()
             selfLocation = options.position
-        if options.verbose:
-            print(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}, roll={roll}, pitch={pitch}")
+        logging.info(f"Self: curTime={curTime}, location={selfLocation}, heading={heading}, roll={roll}, pitch={pitch}")
 
         for uniqueId, info in aircraftInfo.items():
             if uniqueId in tracks.keys():
