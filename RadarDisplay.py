@@ -206,22 +206,32 @@ class RadarDisplay():
 
         #### FIXME fix rotation of symbol to match the vector (which seems correct)
         symbol = self.symbols[track.category]
-        s = pygame.transform.rotate(symbol, angle) if track.category in ROTATE_SYMBOL else symbol
+        newAngle = (angle + 180.0) if angle < 180 else -(180.0 - angle)
+        print("XXXX", int(angle), int(newAngle))
+        s = pygame.transform.rotate(symbol, newAngle) if track.category in ROTATE_SYMBOL else symbol
         self.surface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
                               (trackPosition[1] - floor(s.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
         """
-        delta = 10
-        selfSymbol = pygame.Surface(((2 * delta), (2 * delta)))
-        selfSymbol.fill(self.bgColor)
-        selfSymbol.set_colorkey(self.bgColor)
-        #### TODO replace this with a bitmap file glyph
-        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), (delta, (2 * delta)))
-        pygame.draw.line(selfSymbol, self.selfColor, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
-        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((0.5 * delta), (0.5 * delta)))
-        pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((1.5 * delta), (0.5 * delta)))
+        filePath = os.path.join(self.assetsPath, f"self.png")
+        if os.path.exists(filePath):
+            img = pygame.image.load(filePath)
+            selfSymbol = pygame.Surface(img.get_size())
+            selfSymbol.fill(self.bgColor)
+            selfSymbol.set_colorkey(self.bgColor)
+            selfSymbol.blit(img, (0,0))
+        else:
+            delta = 10
+            selfSymbol = pygame.Surface(((2 * delta), (2 * delta)))
+            selfSymbol.fill(self.bgColor)
+            selfSymbol.set_colorkey(self.bgColor)
+            #### TODO replace this with a bitmap file glyph
+            pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), (delta, (2 * delta)))
+            pygame.draw.line(selfSymbol, self.selfColor, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
+            pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((0.5 * delta), (0.5 * delta)))
+            pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((1.5 * delta), (0.5 * delta)))
         self.selfSymbol = selfSymbol
 
     def _renderSelfSymbol(self, rotation):
@@ -331,14 +341,17 @@ class RadarDisplay():
           #### TODO
         """
         if len(tracks) < 1:
+            self._initScreen(rotation)
+            pygame.display.flip()
             return
+
         sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
         if self.autoRange:
             maxDist = sortedTracks[-1].distance
             logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
             self._setMaxDistance(maxDist)
         self._initScreen(rotation)
-        #### TODO implement per-track trails, for now do them all the same
+
         if self.verbose:
             print("flight      alt.  speed   dir.  dist.   azi.  cat.")
             print("--------  ------  -----  -----  -----  -----  ----")
@@ -350,6 +363,7 @@ class RadarDisplay():
                 print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
             if self.verbose >= 2:
                 print(track)
+            #### TODO implement per-track trails, for now do them all the same
             self._renderSymbol(track, selfLocation, self.trails)
         if self.verbose:
             print("")
