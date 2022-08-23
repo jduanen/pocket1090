@@ -46,6 +46,71 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
   - 'q': quit -- exit the application
   - 'h | ?': print the keyboard inputs
 
+## SW
+
+### Raspberry Pi Zero 2W
+* Prepare SW Environment
+  - update pygame
+    * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+    * RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
+  - install 2.x pygame
+    * 'pip3 install pygame==2'
+  - also install missing package:
+    * 'sudo apt-get install libsdl2-image-2.0-0'
+
+### GPS Receiver
+* Enable serial port without console
+  - using 'sudo raspi-config'
+* Configure and test serial port
+  - 'stty -F /dev/serial0 raw 9600 cs8 clocal -cstopb'
+  - 'cat /dev/serial0'
+    * should get NMEA strings from GPS unit
+* N.B.
+  - Using $GPGGA NMEA messages to get orientation information
+  - Doing simple filtering of lat/lon
+    * Assuming device not near poles/equator (where discontinuities occur)
+  - Not using gpsd to reduce background load on the CPU
+
+### 9DoF IMU
+* RasPi didn't handle I2C clock-stretching properly
+  - seems to work fine with PiZero V2
+* install Adafruit BNO055 library from PyPi
+  - sudo pip3 install adafruit-bno055
+
+### dump1090-fa
+* set up environment
+  - 'sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev'
+* clone dump1090-fa
+  - 'git clone git@github.com:flightaware/dump1090.git'
+* patch dump1090-fa to not write history files
+  - e.g., as defined in dump1090.patch
+* build modified dump1090-fa
+  - './prepare-build.sh bullseye'
+  - 'cd package-bullseye'
+  - 'dpkg-buildpackage -b --no-sign'
+* run dump1090-fa
+  - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+
+### pocket1090
+* set up environment
+  - 'sudo apt install libsdl2-ttf-2*'
+  - 'pip3 install -r requirements.txt'
+* run pocket1090 application
+  - './pocket1090.py -v /tmp -L INFO -f'
+  - run in full-screen mode
+
+### pocket1090.sh
+* script to install, run, stop, get the status, and remove installation of pocket1090 application
+
+### Screenshots
+![Desktop Display 1](screen1.png)
+
+![Desktop Display 2](screen2.png)
+
+![Desktop Display 3](screen3.png)
+
+![Desktop Display 4](screen4.png)
+
 ## HW
 
 ### Raspberry Pi Zero 2W
@@ -156,71 +221,6 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 
 ### External antenna
 *TBD*
-
-## SW
-
-### Raspberry Pi Zero 2W
-* Prepare SW Environment
-  - update pygame
-    * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
-    * RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
-  - install 2.x pygame
-    * 'pip3 install pygame==2'
-  - also install missing package:
-    * 'sudo apt-get install libsdl2-image-2.0-0'
-
-### GPS Receiver
-* Enable serial port without console
-  - using 'sudo raspi-config'
-* Configure and test serial port
-  - 'stty -F /dev/serial0 raw 9600 cs8 clocal -cstopb'
-  - 'cat /dev/serial0'
-    * should get NMEA strings from GPS unit
-* N.B.
-  - Using $GPGGA NMEA messages to get orientation information
-  - Doing simple filtering of lat/lon
-    * Assuming device not near poles/equator (where discontinuities occur)
-  - Not using gpsd to reduce background load on the CPU
-
-### 9DoF IMU
-* RasPi didn't handle I2C clock-stretching properly
-  - seems to work fine with PiZero V2
-* install Adafruit BNO055 library from PyPi
-  - sudo pip3 install adafruit-bno055
-
-### dump1090-fa
-* set up environment
-  - 'sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev'
-* clone dump1090-fa
-  - 'git clone git@github.com:flightaware/dump1090.git'
-* patch dump1090-fa to not write history files
-  - e.g., as defined in dump1090.patch
-* build modified dump1090-fa
-  - './prepare-build.sh bullseye'
-  - 'cd package-bullseye'
-  - 'dpkg-buildpackage -b --no-sign'
-* run dump1090-fa
-  - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
-
-### pocket1090
-* set up environment
-  - 'sudo apt install libsdl2-ttf-2*'
-  - 'pip3 install -r requirements.txt'
-* run pocket1090 application
-  - './pocket1090.py -v /tmp -L INFO -f'
-  - run in full-screen mode
-
-### pocket1090.sh
-* script to install, run, stop, get the status, and remove installation of pocket1090 application
-
-### Screenshots
-![Desktop Display 1](screen1.png)
-
-![Desktop Display 2](screen2.png)
-
-![Desktop Display 3](screen3.png)
-
-![Desktop Display 4](screen4.png)
 
 ------------------------------------------------------------------------------
 
