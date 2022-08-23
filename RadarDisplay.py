@@ -44,7 +44,11 @@ RING_DIVISORS = (8, 4, 2, 1.333333, 1)
 
 
 class RadarDisplay():
-    def __init__(self, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
+    def __init__(self, assetsPath, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
+        self.assetsPath = assetsPath
+        if not os.path.exists(assetsPath):
+            logging.error(f"Invalid path to assets directory: {assetsPath}")
+            raise RuntimeError("Bad assets path")
         if maxDistance < 1:
             maxDistance = 1
             logging.warning("Minimum distance clamped to 1Km")
@@ -135,7 +139,7 @@ class RadarDisplay():
                 pygame.draw.circle(s, self.vectorColor, ((diameter / 2), (diameter / 2)), (diameter / 2), width=1)
                 symbols[cat] = s
                 continue
-            filePath = f"./assets/{cat}.png"  #### FIXME put these somewhere well-known in install and reference it
+            filePath = os.path.join(self.assetsPath, f"{cat}.png")
             if not os.path.exists(filePath):
                 #### FIXME improve this -- e.g., different colors for different categories
                 dim = 8

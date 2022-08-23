@@ -41,6 +41,7 @@ DEF_CONFIG_FILE = "./pocket1090.yml"
 DEFAULT_CONFIG = {
     'logLevel': "DEBUG",  #"DEBUG" #"INFO" #"WARNING"
     'logFile': None,  # None means use stdout
+    'assetsPath': "/opt/pocket1090/assets"
 }
 
 REQUIRED_FIELDS = set({'lat', 'lon'})
@@ -59,7 +60,7 @@ def run(options):
         gps = GPS()
     if options.orientation is None:
         compass = Compass()
-    screen = RadarDisplay(fullScreen=options.fullScreen, verbose=options.verbose)
+    screen = RadarDisplay(options.config['assetsPath'], fullScreen=options.fullScreen, verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
@@ -176,7 +177,7 @@ def getOps():
         print("")
 
     # N.B. precedence order: command line options then config file inputs.
-    #      if neither given, then propmt user for console input
+    #      if neither given, then prompt user for console input
     opts.config = DEFAULT_CONFIG
 
     if opts.logLevel:
@@ -216,16 +217,17 @@ def getOps():
         opts.position = Point(float(position[0]), float(position[1]))
 
     if opts.verbose:
-        print(f"    JSON Files Path: {opts.path}")
+        print(f"    JSON Files Path:  {opts.path}")
+        print(f"    Asset Files Path: {opts.config['assetsPath']}")
         if opts.fullScreen:
             print(f"    Enable Full Screen Mode")
-        print(f"    Log level:       {opts.config['logLevel']}")
+        print(f"    Log level:        {opts.config['logLevel']}")
         if opts.config['logFile']:
-            print(f"    Logging to:      {opts.config['logFile']}")
+            print(f"    Logging to:       {opts.config['logFile']}")
         else:
             print(f"    Logging to stdout")
         if opts.position:
-            print(f"    Fixed Position:  {opts.position}")
+            print(f"    Fixed Position:   {opts.position}")
         else:
             print(f"    Using GPS for Time and Position")
 
