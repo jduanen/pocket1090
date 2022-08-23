@@ -4,7 +4,46 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 
 **WIP**
 
+## Key Features
+* Range
+  - Automatic: automatically select smallest (power of two Km) range that includes all current tracks
+  - Manual: increase/decrease range in powers of two Km distances
+* Trails (i.e., position points)
+  - show position point history
+  - can select no points, all points, or just the last 'N' points
+* Aging of Tracks
+  - enable/disable fade-out with time since last seen
+* Summary
+  - list of current tracks, sorted by distance from receiver
+  - includes: flight number, altitude, speed, direction, distance, azimuth, and category
+* Details
+  - popup with detailed information on selected track
+  - all current information about the track
+* Filters
+  - inside/outside altitude/speed range
+  - categories
+  - flight number (prefix)
+  - uniqueIds
+  - greater-/less-than distance
+  - heading
+
 ![Desktop Display 5](screen5.png)
+
+## Interacting with the Application
+* Command-line Arguments
+  - *TBD*
+* Touch Panel Inputs
+  - *TBD*
+* Keyboard Inputs
+  - Left Arrow: reduce maximum number of trail points displayed
+  - Right Arrow: increase maximum number of trail points displayed
+  - Home: display no trail points
+  - End: display all trail points
+  - Up Arrow: increase the max distance to the next power of two Km
+  - Down Arrow: decrease the max distance to the next power of two Km
+  - 'a': auto-range -- enable auto-range mode
+  - 'm': manual range -- disable auto-range mode
+  - 'q': quit -- exit the application
 
 ## HW
 
@@ -169,28 +208,6 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 * run pocket1090 application
   - './pocket1090.py -v /tmp -L INFO -f'
   - run in full-screen mode
-* Key Features
-  - Range
-    * Automatic: automatically select smallest (power of two Km) range that includes all current tracks
-    * Manual: increase/decrease range in powers of two Km distances
-  - Trails (i.e., position points)
-    * show position point history
-    * can select no points, all points, or just the last 'N' points
-  - Aging of Tracks
-    * enable/disable fade-out with time since last seen
-  - Summary
-    * list of current tracks, sorted by distance from receiver
-    * includes: flight number, altitude, speed, direction, distance, azimuth, and category
-  - Details
-    * popup with detailed information on selected track
-    * all current information about the track
-  - Filters
-    * inside/outside altitude/speed range
-    * categories
-    * flight number (prefix)
-    * uniqueIds
-    * greater-/less-than distance
-    * heading
 
 ### pocket1090.sh
 * script to install, run, stop, get the status, and remove installation of pocket1090 application
