@@ -1,5 +1,6 @@
 # pocket1090
-Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder
+Handheld, standalone, network-free, air traffic monitoring application.
+Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 
 **WIP**
 
@@ -8,11 +9,9 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 ## HW
 
 ### Raspberry Pi Zero 2W
-
 * https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/
 
 ### LCD Display
-
 * https://www.waveshare.com/product/raspberry-pi/displays/4inch-hdmi-lcd.htm
 * https://www.waveshare.com/wiki/4inch_HDMI_LCD
   - 4" 480x800 IPS LCD display
@@ -38,13 +37,11 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * 25: GND                  26: CE1
 
 ### RTLSDI USB Dongle
-
 * FlightAware Pro-Stick Plus: https://flightaware.store/products/pro-stick-plus
   - built-in 1090MHz bandpass filter
   - SMA F connector
 
 ### GPS Receiver
-
 * https://www.adafruit.com/product/746
 * GPS Receiver
   - 66 channel, 22 tracking
@@ -79,7 +76,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - GPIO 27: PPS
 
 ### 9DoF IMU
-
 * https://www.adafruit.com/product/2472
 * IMU
   - I2C interface, Address: 0x28, 10K pullups
@@ -116,17 +112,14 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - GPIO 5: DC
 
 ### Battery and Charger
-
 *TBD*
 
 ### External antenna
-
 *TBD*
 
 ## SW
 
 ### Raspberry Pi Zero 2W
-
 * Prepare SW Environment
   - update pygame
     * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
@@ -137,7 +130,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * 'sudo apt-get install libsdl2-image-2.0-0'
 
 ### GPS Receiver
-
 * Enable serial port without console
   - using 'sudo raspi-config'
 * Configure and test serial port
@@ -151,14 +143,12 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - Not using gpsd to reduce background load on the CPU
 
 ### 9DoF IMU
-
 * RasPi didn't handle I2C clock-stretching properly
   - seems to work fine with PiZero V2
 * install Adafruit BNO055 library from PyPi
   - sudo pip3 install adafruit-bno055
 
 ### dump1090-fa
-
 * set up environment
   - 'sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev'
 * clone dump1090-fa
@@ -173,7 +163,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
 
 ### pocket1090
-
 * set up environment
   - 'sudo apt install libsdl2-ttf-2*'
   - 'pip3 install -r requirements.txt'
@@ -204,11 +193,9 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
     * heading
 
 ### pocket1090.sh
-
 * script to install, run, stop, get the status, and remove installation of pocket1090 application
 
 ### Screenshots
-
 ![Desktop Display 1](screen1.png)
 
 ![Desktop Display 2](screen2.png)
@@ -292,7 +279,6 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - put screen size and where to get assets into config (use different sized symbols based on screen size)
 
 ## TODO
-
 * Figure out what kind of input device to use -- e.g., track point, touchscreen, shaft-encoder
   - use touch panel -- figure out how to make it work on Ubuntu
 * Add UTC clock display (from GPS)
