@@ -143,6 +143,7 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
   - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
 * must install 2.0 pygame: pip3 install pygame==2
+* also: sudo apt-get install libsdl2-image-2.0-0
 
 * GPS
   - set up Serial Port for GPS
