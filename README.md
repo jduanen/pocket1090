@@ -3,38 +3,237 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 
 **WIP**
 
-## Desktop version Screenshots
+## HW
 
-### Max Range
+### Raspberry Pi Zero 2W
+
+* https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/
+
+### LCD Display
+
+* https://www.waveshare.com/product/raspberry-pi/displays/4inch-hdmi-lcd.htm
+* https://www.waveshare.com/wiki/4inch_HDMI_LCD
+  - 4" 480x800 IPS LCD display
+  - portrait-mode
+  - 170 degree viewing angle
+  - separate (micro-USB) power input for backlight
+  - HDMI video input interface
+  - resistive touch panel, XPT2046 controller
+  - 3-/4-wire SPI interface to touch panel
+  - 26pin dual-row connector
+    * 1: 3.3V                   2: 5V
+    * 3: SDA                    4: 5V
+    * 5: SCL                    6: GND
+    * 7: P7                     8: TX
+    * 9: GND                   10: RX
+    * 11: P0                   12: P1
+    * 13: P2                   14: GND
+    * 15: P3                   16: P4
+    * 17: 3V3                  18: P5
+    * 19: MOSI (TP SPI in)     20: GND
+    * 21: MISO (TP SPI out)    22: P6 (TP IRQ)
+    * 23: SCLK (TP SCLK)       24: CE0 (TP CS)
+    * 25: GND                  26: CE1
+
+### RTLSDI USB Dongle
+
+* FlightAware Pro-Stick Plus: https://flightaware.store/products/pro-stick-plus
+  - has built-in 1090MHz bandpass filter
+  - SMA F connector
+
+### GPS Receiver
+
+* https://www.adafruit.com/product/746
+* GPS Receiver
+  - 66 channel, 22 tracking
+  - 10Hz updates, 34 secs warm/cold start
+  - NMEA 0183, 9600 baud, 3V levels (5V tolerant)
+  - PA1616S module, MTK3339
+  - -165dBm sensitivity
+  - 20mA
+  - 3.3-5V input
+  - battery-backed RTC, CR1220
+  - Red Fix LED
+    * blinks at ~1Hz while searching for satelites
+    * blinks once every ~15 seconds when a fix is acheieved
+  - PPS output
+  - on-board patch antenna, u.FL connector
+* pins
+  - 3.3V (out)
+  - ENB (in)
+  - VBAT (in)
+  - FIX (out)
+  - TX (out)
+  - RX (in)
+  - GND
+  - VIN (in)
+  - PPS (out)
+* Raspi Connection
+  - GPIO 4:  ENB
+  - GPIO 14: RX
+  - GPIO 15: TX
+  - 5V:      VIN
+  - GND:     GND
+  - GPIO 27: PPS
+
+### 9DoF IMU
+
+* https://www.adafruit.com/product/2472
+* IMU
+  - I2C interface, Address: 0x28, 10K pullups
+    * might need 3.3K SCL and 2.2K SDA for 3.3V operation
+  - auto-calibration
+  - (black-box) sensor fusion
+  - emits:
+    * Euler Vector @ 100Hz
+      - only use Euler Angles for pitch/roll < 45 degrees
+    * Four Point Quaternion @ 100Hz
+    * Angular Velocity Vector @ 100Hz
+    * Accleration Vector @ 100Hz
+    * Magnetic Field Strength Vector @ 20Hz
+    * Linear Accleration Vector @ 100Hz
+    * Gravity Vector @ 100Hz
+    * Temperature @ 1Hz
+  - N.B. highly sensitive to RF -- need to worry about placement/sheilding
+* pins
+  - VIN (in): 3-5V
+  - 3VO (out): 3.3V output from regulator, < 50mA
+  - GND
+  - SCL (in): 3-5V, 10K pullup
+  - SDA (bidir): 3-5V, 10K pullup
+  - RST (in): reset on rising edge
+  - P0: n/c
+  - P1: n/c
+  - INT (out): interrupt on motion, 3V
+  - ADR (in): I2C address selection, 1=0x29, 0=0x28, 3V
+* Raspi Connection
+  - 3.3V:   VIN
+  - GND:    GND
+  - GPIO 2: SDA
+  - GPIO 3: SCL
+  - GPIO 5: DC
+
+### Battery and Charger
+
+**TBD**
+
+### External antenna
+
+**TBD**
+
+## SW
+
+### Raspberry Pi Zero 2W
+
+#### Prepare SW Environment
+* update pygame
+  - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+  - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
+* must install 2.0 pygame: pip3 install pygame==2
+* also: sudo apt-get install libsdl2-image-2.0-0
+
+### LCD Display
+
+### RTLSDI USB Dongle
+
+### GPS Receiver
+
+* Enable serial port without console
+  - using 'sudo raspi-config'
+* Configure and test serial port
+  - 'stty -F /dev/serial0 raw 9600 cs8 clocal -cstopb'
+  - 'cat /dev/serial0'
+    * should get NMEA strings from GPS unit
+* N.B.
+  - Using $GPGGA NMEA messages to get orientation information
+  - Doing simple filtering of lat/lon
+    * Assuming device not near poles/equator (where discontinuities occur)
+  - Not using gpsd to reduce background load on the CPU
+
+### 9DoF IMU
+
+
+### RasPi Notes
+* IMU
+  - set up I2C for IMU
+    * I2C HW: SCL=3, SDA=2
+    * Raspi doesn't do I2C clock stretching properly so have to do something else
+      - could switch and use the IMU in serial mode (with the second HW UART?)
+    * replace i2c device with bit-banging driver (using same pins) via device tree overlay
+      - sudo raspi-config
+      - Interfaces->I2C -- disable ('<NO>')
+      - sudo cp /boot/config.txt /boot/config.txt.orig
+      - sudo ex /boot/config.txt
+        * add: dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=02,i2c_gpio_scl=03
+      - reboot and "ls -l /dev/i2c*" look for /dev/i2c-3
+        * crw-rw---- 1 root i2c 89,  3 Dec 1 18:30 /dev/i2c-3
+      - verify with: i2cdetect -y -r 3
+        * should show BNO055 at address 28
+    * alternatively use second HW UART and strap BNO055 to use serial (instead of I2C)
+  - sudo pip3 install Adafruit-Blinka
+    import board
+    import busio
+    i2c = busio.I2C(board.SCL, board.SDA)
+  - sudo pip3 install adafruit-bno055
+  - sudo pip3 install adafruit-bno055
+  - from Adafruit_BNO055 import BNO055
+    bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
+    if not bno.begin():
+      print("ERROR: failed to init")
+  - consider getting this: http://gps-pie.com/L80_slice.htm
+
+* dump1090-fa
+  - get and build dump1090-fa
+    * git clone git@github.com:flightaware/dump1090.git
+    * sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
+    * ./prepare-build.sh bullseye
+    * cd package-bullseye
+    * dpkg-buildpackage -b --no-sign
+  - run dump1090-fa
+    #### FIXME figure out how much to write and where
+    * /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+
+* run pocket1090
+  - sudo apt install libsdl2-ttf-2*
+  - pip3 install geopy gps pygame pyYaml
+  - ./pocket1090.py -v /tmp -L INFO
+
+
+
+
+
+### Screenshots
+
+#### Max Range
 ![Desktop Display 1](screen1.png)
 
-### Mid Range, Trails On
+#### Mid Range, Trails On
 ![Desktop Display 2](screen2.png)
 
-### Max Range, Trails On
+#### Max Range, Trails On
 ![Desktop Display 3](screen3.png)
 
-## Key Features
+### Key Features
 
-### Range
+#### Range
 
 * Manual: increase/decrease range
 * Automatic: automatically select smallest range that includes all current tracks
 
-### Trails (i.e., position points)
+#### Trails (i.e., position points)
 
 * show last 'N' position points (0 = no trails)
 
-### Aging
+#### Aging
 
 * enable/disable fade-out with time since last seen
 
-### Focus
+#### Focus
 
 * single track
 * additional information
 
-### Filters
+#### Filters
 
 * inside/outside altitude/speed range
 * categories
@@ -43,7 +242,11 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * greater-/less-than distance
 * heading
 
-## Automatic Dependent Surveillance-Broadcast (ADS-B) Notes
+------------------------------------------------------------------------------
+
+## Notes
+
+### Automatic Dependent Surveillance-Broadcast (ADS-B) Notes
 * 1090MHz: Mode-A/C/S transponder
   - additional information (i.e., "extended squitter" message) aka 1090ES
   - aircraft flying above 18,000ft are required to have 1090ES
@@ -79,10 +282,8 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - min: -20.3
   - max: -2.0
 
-## Design Notes
-* use dump1090-fa to emit json files, generate console display using matplotlib
-* Main HW Components
-  - LiPo battery, FlightAware Pro-Stick Plus, Raspi Zero, round LCD display with capacitive touchscreen and HDMI interface, external whip antenna, GPS receiver
+### Design Notes
+* use dump1090-fa to emit json files, generate console display using pygame
 * Display features:
   - concentric rings indicating range (device is in the center)
   - selectable range (between some min/max values that make sense)
@@ -117,17 +318,21 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
 * create different profiles for Handheld and Desktop uses -- do it all with config files
   - put screen size and where to get assets into config (use different sized symbols based on screen size)
 
-### TODO
+## TODO
 
 * Figure out what kind of input device to use -- e.g., track point, touchscreen, shaft-encoder
 * Add UTC clock display (from GPS)
-* Include simplified map?
+* Add map overlays?
+  - get map rectangles from https://openstreetmap.org
+    * export image as .png file with Export button
+    * define bounding box with min/max lat/lon values
+      - fixed size (e.g., 64km on a side) from given center point?
+  - load image with: myMap = plt.imread(<path>)
 * Change radar display if held vertically or horizontally?
 * Make sure all temp files are written to appropriate file system
-* adjust dump1090-fa so it generates output at appropriate intervals
 * come up with simple way of defining filters
 * indicate how many tracks are being filtered at any point in time?
-* add secondary display (small OLED) for additional information
+* add text table for additional information
   - time (UTC) and location (lat/lon)
   - summary of current tracks: (flight number, category, altitude, speed, distance)
   - filtered tracks
@@ -138,22 +343,11 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
   - rotate (or not) properly
   - store different types in different places, put path in config
 
-### RasPi Notes
-* update pygame
-  - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
-  - RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
-* must install 2.0 pygame: pip3 install pygame==2
-* also: sudo apt-get install libsdl2-image-2.0-0
+--------------
 
-* GPS
-  - set up Serial Port for GPS
-    * enable with "sudo rapsi-config"
-      - "No" login shell
-      - "Yes" keep serial port enabled
-  - test GPS Serial connection with:
-    * stty -F /dev/serial0 raw 9600 cs8 clocal -cstopb
-    * cat /dev/serial0
-      - should get text
+* egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
+  - Avg RSSI: -10.8692 dBFS
+
   - install and use gpsd
     * sudo apt-get update; sudo apt-get install gpsd gpsd-clients
     * disable gpsd
@@ -182,8 +376,10 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
         stream = Serial('/dev/ttyAMA0', baudrate=9600, timeout=3)
         nmr = NMEAReader(stream)
         (raw, parsed) = nmr.read()
-  - NEMA 0183 parsing
-    * $GPGGA,181908.00,3404.7041778,N,07044.3966270,W,4,13,1.00,495.144,M,29.200,M,0.10,0000*40
+
+* GPS
+  - NMEA 0183 parsing
+    * "$GPGGA,181908.00,3404.7041778,N,07044.3966270,W,4,13,1.00,495.144,M,29.200,M,0.10,0000*40"
       - $GPGGA: message with fix data
         *'GP' means GPS, 'GL' means GLONASS
       - MsgId:
@@ -236,59 +432,5 @@ Handheld Air Traffic Monitor using the dump1090-fa 1.09GHz SDR-based ADS-B and M
           plt.plot(avgLat, avgLon, marker="x")
           plt.show()
       - ????
-    * add map overlays?
-      - get map rectangles from https://openstreetmap.org
-        * export image as .png file with Export button
-        * define bounding box with min/max lat/lon values
-          - fixed size (e.g., 64km on a side) from given center point?
-      - load image with: myMap = plt.imread(<path>)
-* IMU
-  - set up I2C for IMU
-    * I2C HW: SCL=3, SDA=2
-    * Raspi doesn't do I2C clock stretching properly so have to do something else
-      - could switch and use the IMU in serial mode (with the second HW UART?)
-    * replace i2c device with bit-banging driver (using same pins) via device tree overlay
-      - sudo raspi-config
-      - Interfaces->I2C -- disable ('<NO>')
-      - sudo cp /boot/config.txt /boot/config.txt.orig
-      - sudo ex /boot/config.txt
-        * add: dtoverlay=i2c-gpio,bus=3,i2c_gpio_sda=02,i2c_gpio_scl=03
-      - reboot and "ls -l /dev/i2c*" look for /dev/i2c-3
-        * crw-rw---- 1 root i2c 89,  3 Dec 1 18:30 /dev/i2c-3
-      - verify with: i2cdetect -y -r 3
-        * should show BNO055 at address 28
-    * alternatively use second HW UART and strap BNO055 to use serial (instead of I2C)
-  - sudo pip3 install Adafruit-Blinka
-    import board
-    import busio
-    i2c = busio.I2C(board.SCL, board.SDA)
-  - sudo pip3 install adafruit-bno055
-  - sudo pip3 install adafruit-bno055
-  - from Adafruit_BNO055 import BNO055
-    bno = BNO055.BNO055(address=0x28, i2c="/dev/i2c-3", rst=5)
-    if not bno.begin():
-      print("ERROR: failed to init")
-  - consider getting this: http://gps-pie.com/L80_slice.htm
-
-* dump1090-fa
-  - get and build dump1090-fa
-    * git clone git@github.com:flightaware/dump1090.git
-    * sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev
-    * ./prepare-build.sh bullseye
-    * cd package-bullseye
-    * dpkg-buildpackage -b --no-sign
-  - run dump1090-fa
-    #### FIXME figure out how much to write and where
-    * /home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
-
-* run pocket1090
-  - sudo apt install libsdl2-ttf-2*
-  - pip3 install geopy gps pygame pyYaml
-  - ./pocket1090.py -v /tmp -L INFO
-
---------------
-
-* egrep RSSI /tmp/fa.txt | cut -d ":" -f 2 | cut -d " " -f 2 | awk '{cnt += 1; sum += $1} END {print "Avg RSSI: " sum/cnt " dBFS"}'
-  - Avg RSSI: -10.8692 dBFS
 
 
