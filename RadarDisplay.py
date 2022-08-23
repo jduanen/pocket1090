@@ -179,9 +179,7 @@ class RadarDisplay():
 
         for trailLocation, trailDistance, trailAzimuth in track.getHistory(self.trails):
             x, y = self._calcPixelAddr(trailDistance, trailAzimuth)
-
-            #### FIXME try a 1x1 or 2x2 rectangle instead
-            pygame.draw.circle(self.surface, self.trailColor, (x, y), 1)
+            pygame.draw.rect(self.surface, self.trailColor, Rect((x - 1), (y - 1), 3, 3))
 
         angle = 0
         if track.heading:
@@ -329,21 +327,24 @@ class RadarDisplay():
         """Render the screen with the given rotation and location
           #### TODO
         """
+        if len(tracks) < 1:
+            return
+        sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
         if self.autoRange:
-            maxDist = max([t.distance for t in tracks.values()])
+            maxDist = sortedTracks[-1].distance
             logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
             self._setMaxDistance(maxDist)
         self._initScreen(rotation)
         #### TODO implement per-track trails, for now do them all the same
         if self.verbose:
-            print("flight      alt.  speed   dir.  dist. cat.")
-            print("-------- ------- ------  ----- ------ ----")
-        for uid, track in tracks.items():
+            print("flight      alt.  speed   dir.  dist.   azi.  cat.")
+            print("--------  ------  -----  -----  -----  -----  ----")
+        for track in sortedTracks:
             if self.verbose < 2:
                 alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
                 speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
                 heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
-                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.category: >2}")
+                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
             if self.verbose >= 2:
                 print(track)
             self._renderSymbol(track, selfLocation, self.trails)
