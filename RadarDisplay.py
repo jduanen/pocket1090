@@ -205,10 +205,8 @@ class RadarDisplay():
         textRect.midtop = (trackPosition[0], (trackPosition[1] + 7))
         self.surface.blit(text, textRect)
 
-        #### FIXME fix rotation of symbol to match the vector (which seems correct)
         symbol = self.symbols[track.category]
-        newAngle = -(angle + 90.0) if angle < 270.0 else ((angle - 270.0) - 90.0)
-        print("XXXX", int(angle), int(newAngle))
+        newAngle = -(angle + 90.0) if angle <= 270.0 else -(angle - 270.0)
         s = pygame.transform.rotate(symbol, newAngle) if track.category in ROTATE_SYMBOL else symbol
         self.surface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
                               (trackPosition[1] - floor(s.get_height() / 2))))
