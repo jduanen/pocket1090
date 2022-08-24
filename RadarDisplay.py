@@ -9,6 +9,7 @@ from dataclasses import astuple
 import logging
 from math import floor
 import os
+import threading
 
 import pygame
 from pygame.locals import *
@@ -91,16 +92,18 @@ class RadarDisplay():
         pygame.display.set_caption('Radar Display')
         self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
         self.rangeRings = pygame.Surface((self.diameter, self.diameter))
-
-        self._createButtons()
-
         self.autoRange = True
+
+        self.lock = threading.Lock()
 
         self._setMaxDistance(maxDistance)
         self._createSelfSymbol()
+        self._createButtons()
         self._createSymbols()
-
         self._initScreen(None)
+
+        self.running = True
+        threading.Thread(target=self._eventHandler, args=(), daemon=True).start()
 
     def _setMaxDistance(self, maxDistance):
         """ #### TODO
@@ -150,7 +153,7 @@ class RadarDisplay():
             if buttonName == "All":
                 self.trailsMax()
             elif buttonName == "None":
-                self.trailsReset()
+                self.trailsNone()
             elif buttonName == " ^ ":
                 self.trailsMore()
             elif buttonName == " v ":
@@ -161,7 +164,7 @@ class RadarDisplay():
             elif buttonName == "Info":
                 print("INFO")  #### FIXME
             elif buttonName == "Quit":
-                self.quit()
+                self.running = False
 
     def _createButtons(self):
         """ #### TODO
@@ -422,7 +425,7 @@ class RadarDisplay():
         self.trails = -1
         logging.info(f"Trails: {self.trails}")
 
-    def trailsReset(self):
+    def trailsNone(self):
         """ #### TODO
         """
         self.trails = 0
@@ -439,19 +442,20 @@ class RadarDisplay():
             if self.autoRange:
                 maxDist = sortedTracks[-1].distance
                 logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
-                self._setMaxDistance(maxDist)
+                with self.lock:
+                    self._setMaxDistance(maxDist)
             self._initScreen(rotation)
 
-            if self.verbose:
+            if self.verbose >= 2:
                 print("flight      alt.  speed   dir.  dist.   azi.  cat.")
                 print("--------  ------  -----  -----  -----  -----  ----")
             table = []
             for track in sortedTracks:
                 alt = track.altitude if isinstance(track.altitude, int) else " "
                 speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
-                heading =round(track.heading, 1) if isinstance(track.heading, float) else " "
+                heading = round(track.heading, 1) if isinstance(track.heading, float) else " "
                 table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category])
-                if self.verbose < 2:
+                if self.verbose >= 2:
                     alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
                     speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
                     heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
@@ -460,71 +464,72 @@ class RadarDisplay():
                     print(track)
                 #### TODO implement per-track trails, for now do them all the same
                 self._renderSymbol(track, selfLocation, self.trails)
-            if self.verbose:
+            if self.verbose >= 2:
                 print("")
-
             columns = ["flight", "alt.", "speed", "dir.", "dist.", "azi.", "cat."]
             print(tabulate(table, headers=columns))
-
-        self.screen.blit(self.radarSurface, (0, 0))
-        return self._eventHandler()
+        with self.lock:
+            print("RENDER") #### TMP TMP TMP
+            self.screen.blit(self.radarSurface, (0, 0))
+            pygame.display.flip()
+            r = not self.running
+        return r
 
     def _eventHandler(self):
         """#### TODO
         """
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                self.quit()
-                return True
-            if event.type == KEYDOWN:
-                if event.key == K_LEFT:
-                    self.trailsLess()
-                elif event.key == K_RIGHT:
-                    self.trailsMore()
-                elif event.key == K_HOME:
-                    self.trailsReset()
-                elif event.key == K_END:
-                    self.trailsMax()
-                elif event.key == K_UP:
-                    self.rangeUp()
-                elif event.key == K_DOWN:
-                    self.rangeDown()
-                elif event.key == K_LCTRL:
-                    print("L-CTRL")
-                elif event.key == K_BACKSPACE:
-                    self.trailsReset()
-                elif event.key in (K_a, ):
-                    self.autoRange = True
-                elif event.key in (K_m, ):
-                    self.autoRange = False
-                elif event.key in (K_h, ):
-                    print("Keyboard Inputs:")
-                    print("  Left Arrow: reduce maximum number of trail points displayed")
-                    print("  Right Arrow: increase maximum number of trail points displayed")
-                    print("  Home: display no trail points")
-                    print("  End: display all trail points")
-                    print("  Up Arrow: increase the max distance to the next power of two Km")
-                    print("  Down Arrow: decrease the max distance to the next power of two Km")
-                    print("  'a': auto-range -- enable auto-range mode")
-                    print("  'm': manual range -- disable auto-range mode")
-                    print("  'q': quit -- exit the application")
-                elif event.key in (K_q, ):
-                    self.quit()
-                    return True
-            if event.type == KEYUP:
-                if event.key == K_LEFT:
-                    pass
-                elif event.key == K_RIGHT:
-                    pass
-                elif event.key == K_UP:
-                    pass
-                elif event.key == K_DOWN:
-                    pass
-        print("UPDATE")
-        pygame_widgets.update(events)
-        pygame.display.flip()
-        return False
+        print("STARTING HANDLER")  #### TMP TMP TMP
+        while self.running:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.running = False
+                if event.type == KEYDOWN:
+                    if event.key == K_LEFT:
+                        self.trailsLess()
+                    elif event.key == K_RIGHT:
+                        self.trailsMore()
+                    elif event.key == K_HOME:
+                        self.trailsNone()
+                    elif event.key == K_END:
+                        self.trailsMax()
+                    elif event.key == K_UP:
+                        self.rangeUp()
+                    elif event.key == K_DOWN:
+                        self.rangeDown()
+                    elif event.key == K_LCTRL:
+                        print("L-CTRL")
+                    elif event.key == K_BACKSPACE:
+                        self.trailsNone()
+                    elif event.key in (K_a, ):
+                        self.autoRange = True
+                    elif event.key in (K_m, ):
+                        self.autoRange = False
+                    elif event.key in (K_h, ):
+                        print("Keyboard Inputs:")
+                        print("  Left Arrow: reduce maximum number of trail points displayed")
+                        print("  Right Arrow: increase maximum number of trail points displayed")
+                        print("  Home: display no trail points")
+                        print("  End: display all trail points")
+                        print("  Up Arrow: increase the max distance to the next power of two Km")
+                        print("  Down Arrow: decrease the max distance to the next power of two Km")
+                        print("  'a': auto-range -- enable auto-range mode")
+                        print("  'm': manual range -- disable auto-range mode")
+                        print("  'q': quit -- exit the application")
+                    elif event.key in (K_q, ):
+                        self.running = False
+                if event.type == KEYUP:
+                    if event.key == K_LEFT:
+                        pass
+                    elif event.key == K_RIGHT:
+                        pass
+                    elif event.key == K_UP:
+                        pass
+                    elif event.key == K_DOWN:
+                        pass
+            with self.lock:
+                pygame_widgets.update(events)
+        print("EXITING HANDLER")  #### TMP TMP TMP
 
     def quit(self):
         pygame.quit()
