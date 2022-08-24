@@ -12,12 +12,16 @@ import os
 
 import pygame
 from pygame.locals import *
+import pygame_widgets
+from pygame_widgets.button import Button
+from tabulate import tabulate
 
 from __init__ import * #### FIXME
 
 
 #### TODO Move all of this stuff to config, include paths to assets as well -- config is from main
 DEF_DISPLAY_DIAMETER = 480
+DEF_WINDOW_SIZE = (480, 800)
 
 DEF_BACKGROUND_COLOR = (32, 32, 32)
 DEF_RANGE_RING_COLOR = (128, 128, 0)
@@ -45,11 +49,12 @@ RING_DIVISORS = (8, 4, 2, 1.333333, 1)
 
 
 class RadarDisplay():
-    def __init__(self, assetsPath, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
+    def __init__(self, assetsPath, windowSize=DEF_WINDOW_SIZE, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
         self.assetsPath = assetsPath
         if not os.path.exists(assetsPath):
             logging.error(f"Invalid path to assets directory: {assetsPath}")
             raise RuntimeError("Bad assets path")
+        self.windowSize = windowSize
         if maxDistance < 1:
             maxDistance = 1
             logging.warning("Minimum distance clamped to 1Km")
@@ -69,20 +74,25 @@ class RadarDisplay():
 
         self.trails = 0
 
+        #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
         pygame.font.init()
         if False:
             #print(f"\nFonts: {pygame.font.get_fonts()}\n")
             print(f"\nFonts: {pygame.font.get_default_font()}\n")
-        if False:
             print(f"\nDisplay: \n{pygame.display.Info()}\n{pygame.display.get_driver()} {pygame.display.list_modes()}\n")
         flags = DOUBLEBUF
         if fullScreen:
             flags |= FULLSCREEN
-        self.surface = pygame.display.set_mode((self.diameter, self.diameter), flags)
+        self.screen = pygame.display.set_mode(self.windowSize, flags)
+        if False:
+            print(f"Screen Size: {self.screen.get_size()}")
+        self.radarSurface = pygame.Surface((self.diameter, self.diameter))
         pygame.display.set_caption('Radar Display')
         self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
         self.rangeRings = pygame.Surface((self.diameter, self.diameter))
+
+        self._createButtons()
 
         self.autoRange = True
 
@@ -116,6 +126,89 @@ class RadarDisplay():
         x = (distPx * math.sin(math.radians(azimuth))) + (self.diameter / 2.0)
         y = -(distPx * math.cos(math.radians(azimuth))) + (self.diameter / 2.0)
         return (x, y)
+
+    def _buttonHandler(self, buttonGroup, buttonName):
+        """ #### TODO
+        """
+        #### FIXME implement the handler for each button -- 1:1 with keyboard inputs
+        print(f"{buttonGroup}_{buttonName}")  #### TMP TMP TMP
+        if buttonGroup == "Range":
+            if buttonName == "Auto":
+                self.autoRange = True
+            elif buttonName == "Manual":
+                self.autoRange = False
+            elif buttonName == " ^ ":
+                self.rangeUp()
+            elif buttonName == " v ":
+                self.rangeDown()
+        elif buttonGroup == "Tracks":
+            if buttonName == "Nearest":
+                print("NEAR")  #### FIXME
+            elif buttonName == "Farthest":
+                print("FAR")  #### FIXME
+        elif buttonGroup == "Trails":
+            if buttonName == "All":
+                self.trailsMax()
+            elif buttonName == "None":
+                self.trailsReset()
+            elif buttonName == " ^ ":
+                self.trailsMore()
+            elif buttonName == " v ":
+                self.trailsLess()
+        elif buttonGroup == "Other":
+            if buttonName == "Details":
+                print("DETAILS")  #### FIXME
+            elif buttonName == "Info":
+                print("INFO")  #### FIXME
+            elif buttonName == "Quit":
+                self.quit()
+
+    def _createButtons(self):
+        """ #### TODO
+        """
+        LABELS = ("Range", "Tracks", "Trails", "Other")
+        LABEL_WIDTH = int(round((self.diameter / len(LABELS))))
+        LABEL_HEIGHT = 12
+        self.labels = {}
+        x = 0
+        for l in LABELS:
+            self.labels[l] = Button(self.screen,
+                x + 1, self.diameter,
+                LABEL_WIDTH - 2, LABEL_HEIGHT,
+                text=l, fontSize=14, margin=1,
+                inactiveColour=(128, 128, 128),
+                hoverColour=(128, 128, 128),
+                pressedColour=(128, 128, 128))
+            x += LABEL_WIDTH
+
+        BUTTON_LABELS = [
+            ("Auto", "Manual", " ^ ", " v "),
+            ("Nearest", "Farthest"),
+            ("All", "None", " ^ ", " v "),
+            ("Details", "Info", "Quit")]
+        BUTTON_HEIGHT = 12
+        self.buttons = {}
+        for indx, labels in enumerate(BUTTON_LABELS):
+            totalLabelsLen = sum(len(l) for l in labels)
+            x = (indx * LABEL_WIDTH)
+            totalButtonWidth = 0
+            for b in labels:
+                buttonName = f"{LABELS[indx]}_{b}"
+                buttonWidth = int(round(((len(b) * LABEL_WIDTH)/ totalLabelsLen) + 0.5))
+                totalButtonWidth += buttonWidth
+                if totalButtonWidth >= LABEL_WIDTH:
+                    x -= 1
+                y = self.diameter + LABEL_HEIGHT + 1
+                self.buttons[buttonName] = Button(self.screen,
+                    x + 1, y,
+                    buttonWidth - 2, BUTTON_HEIGHT,
+                    text=b, fontSize=14, margin=2,
+                    inactiveColour=(160, 160, 160),
+                    hoverColour=(96, 96, 96),
+                    pressedColour=(192, 192, 192),
+                    onClickParams=(LABELS[indx], b),
+                    onClick=self._buttonHandler)
+                x += buttonWidth
 
     def _createSymbols(self):
         """Create all symbols and draw on the symbols surface
@@ -183,7 +276,7 @@ class RadarDisplay():
 
         for trailLocation, trailDistance, trailAzimuth in track.getHistory(self.trails):
             x, y = self._calcPixelAddr(trailDistance, trailAzimuth)
-            pygame.draw.rect(self.surface, self.trailColor, Rect((x - 1), (y - 1), 3, 3))
+            pygame.draw.rect(self.radarSurface, self.trailColor, Rect((x - 1), (y - 1), 3, 3))
 
         angle = 0
         if track.heading:
@@ -191,25 +284,25 @@ class RadarDisplay():
             length = (5 + (track.speed / 10))
             angle = ((track.heading + 270) % 360)
             endPt = pygame.math.Vector2(startPt + pygame.math.Vector2(length, 0).rotate(angle))
-            pygame.draw.line(self.surface, self.vectorColor, startPt, endPt, 1)
+            pygame.draw.line(self.radarSurface, self.vectorColor, startPt, endPt, 1)
 
         text = self.font.render(f"{track.flightNumber}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midbottom = (trackPosition[0], (trackPosition[1] - 5))
-        self.surface.blit(text, textRect)
+        self.radarSurface.blit(text, textRect)
 
         text = self.font.render(f"{track.altitude}", True, self.trackFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midtop = (trackPosition[0], (trackPosition[1] + 7))
-        self.surface.blit(text, textRect)
+        self.radarSurface.blit(text, textRect)
 
         symbol = self.symbols[track.category]
         newAngle = -(angle + 90.0) if angle <= 270.0 else -(angle - 270.0)
         s = pygame.transform.rotate(symbol, newAngle) if track.category in ROTATE_SYMBOL else symbol
-        self.surface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
-                              (trackPosition[1] - floor(s.get_height() / 2))))
+        self.radarSurface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
+                                   (trackPosition[1] - floor(s.get_height() / 2))))
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -238,8 +331,8 @@ class RadarDisplay():
             s = self.selfSymbol
         else:
             s = pygame.transform.rotate(self.selfSymbol, -rotation)
-        self.surface.blit(s, ((self.center.x - floor(s.get_width() / 2)),
-                              (self.center.y - floor(s.get_height() / 2))))
+        self.radarSurface.blit(s, ((self.center.x - floor(s.get_width() / 2)),
+                                   (self.center.y - floor(s.get_height() / 2))))
 
     def _createRangeRings(self):
         """Draw and label the range rings onto the rangeRings surface
@@ -262,14 +355,14 @@ class RadarDisplay():
         """Render the range rings onto the display surface
           #### TODO
         """
-        self.surface.blit(self.rangeRings, ((self.center.x - floor(self.rangeRings.get_width() / 2)),
-                                            (self.center.y - floor(self.rangeRings.get_height() / 2))))
+        self.radarSurface.blit(self.rangeRings, ((self.center.x - floor(self.rangeRings.get_width() / 2)),
+                                                 (self.center.y - floor(self.rangeRings.get_height() / 2))))
 
     def _initScreen(self, rotation):
         """Clear the screen and draw the static elements (i.e., range rings and self symbol)
           #### TODO
         """
-        self.surface.fill(self.bgColor)
+        self.radarSurface.fill(self.bgColor)
         self._renderRangeRings()
         self._renderSelfSymbol(rotation)
 
@@ -340,38 +433,47 @@ class RadarDisplay():
           #### TODO
         """
         if len(tracks) < 1:
+            self._initScreen(rotation)  #### TODO figure out if I need this here
+        else:
+            sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
+            if self.autoRange:
+                maxDist = sortedTracks[-1].distance
+                logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
+                self._setMaxDistance(maxDist)
             self._initScreen(rotation)
-            pygame.display.flip()
-            return
 
-        sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
-        if self.autoRange:
-            maxDist = sortedTracks[-1].distance
-            logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
-            self._setMaxDistance(maxDist)
-        self._initScreen(rotation)
+            if self.verbose:
+                print("flight      alt.  speed   dir.  dist.   azi.  cat.")
+                print("--------  ------  -----  -----  -----  -----  ----")
+            table = []
+            for track in sortedTracks:
+                alt = track.altitude if isinstance(track.altitude, int) else " "
+                speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
+                heading =round(track.heading, 1) if isinstance(track.heading, float) else " "
+                table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category])
+                if self.verbose < 2:
+                    alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
+                    speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
+                    heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
+                    print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
+                if self.verbose >= 2:
+                    print(track)
+                #### TODO implement per-track trails, for now do them all the same
+                self._renderSymbol(track, selfLocation, self.trails)
+            if self.verbose:
+                print("")
 
-        if self.verbose:
-            print("flight      alt.  speed   dir.  dist.   azi.  cat.")
-            print("--------  ------  -----  -----  -----  -----  ----")
-        for track in sortedTracks:
-            if self.verbose < 2:
-                alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
-                speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
-                heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
-                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
-            if self.verbose >= 2:
-                print(track)
-            #### TODO implement per-track trails, for now do them all the same
-            self._renderSymbol(track, selfLocation, self.trails)
-        if self.verbose:
-            print("")
-        pygame.display.flip()
+            columns = ["flight", "alt.", "speed", "dir.", "dist.", "azi.", "cat."]
+            print(tabulate(table, headers=columns))
 
-    def eventHandler(self):
+        self.screen.blit(self.radarSurface, (0, 0))
+        return self._eventHandler()
+
+    def _eventHandler(self):
         """#### TODO
         """
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 self.quit()
                 return True
@@ -396,7 +498,7 @@ class RadarDisplay():
                     self.autoRange = True
                 elif event.key in (K_m, ):
                     self.autoRange = False
-                elif event.key in (K_h):
+                elif event.key in (K_h, ):
                     print("Keyboard Inputs:")
                     print("  Left Arrow: reduce maximum number of trail points displayed")
                     print("  Right Arrow: increase maximum number of trail points displayed")
@@ -419,6 +521,9 @@ class RadarDisplay():
                     pass
                 elif event.key == K_DOWN:
                     pass
+        print("UPDATE")
+        pygame_widgets.update(events)
+        pygame.display.flip()
         return False
 
     def quit(self):
