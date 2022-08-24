@@ -4,3 +4,4 @@ pygame
 pynmeagps
 pyYaml
 SDL
+tabulate
