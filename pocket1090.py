@@ -60,7 +60,7 @@ def run(options):
         gps = GPS()
     if options.orientation is None:
         compass = Compass()
-    screen = RadarDisplay(options.config['assetsPath'], fullScreen=options.fullScreen, verbose=options.verbose)
+    radar = RadarDisplay(options.config['assetsPath'], fullScreen=options.fullScreen, verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
@@ -69,9 +69,6 @@ def run(options):
     msgCount = 0
     tracks = {}
     while running:
-        if screen.eventHandler():
-            running = False
-            continue
         ts = os.stat(aircraftFile).st_mtime
         while ts == lastTs:
             ts = os.stat(aircraftFile).st_mtime
@@ -127,8 +124,10 @@ def run(options):
 
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
-        screen.render(heading, selfLocation, tracks)
-    screen.quit()
+
+        if radar.render(heading, selfLocation, tracks):
+            running = False
+    radar.quit()
     print("DONE")
     return 0
 
