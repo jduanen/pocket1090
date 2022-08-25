@@ -42,7 +42,8 @@ DEF_SUMMARY_FONT_COLOR = (0xFF, 0xBF, 0x00)
 DEF_FONT_INFO = {
     'symbolFont': ("freesansbold.ttf", 10, DEF_SYMBOL_FONT_COLOR),
     'ringFont': ("freesansbold.ttf", 10, DEF_RING_FONT_COLOR),
-    'summaryFont': ("FreeMono, Monospace", 10, DEF_SUMMARY_FONT_COLOR)
+    'summaryFont': ("FreeMono, Monospace", 12, DEF_SUMMARY_FONT_COLOR),
+    'infoFont': ("FreeMono, Monospace", 14, DEF_SUMMARY_FONT_COLOR)
 }
 MAX_SYMBOL_SIZE = 5
 ALL_CATEGORIES = (f"{letter}{number}" for letter in ("A", "B", "C", "D", "E") for number in range(8))
@@ -77,6 +78,7 @@ class RadarDisplay():
         self.symbolFontInfo = fontInfo['symbolFont']
         self.ringFontInfo = fontInfo['ringFont']
         self.summaryFontInfo = fontInfo['summaryFont']
+        self.infoFontInfo = fontInfo['infoFont']
         self.fullScreen = fullScreen
         self.verbose = verbose
 
@@ -108,6 +110,8 @@ class RadarDisplay():
         self.ringFontColor = self.ringFontInfo[2]
         self.summaryFont = pygame.font.SysFont(self.summaryFontInfo[0], self.summaryFontInfo[1])
         self.summaryFontColor = self.summaryFontInfo[2]
+        self.infoFont = pygame.font.SysFont(self.infoFontInfo[0], self.infoFontInfo[1])
+        self.infoFontColor = self.infoFontInfo[2]
 
         flags = DOUBLEBUF
         if fullScreen:
@@ -518,9 +522,9 @@ class RadarDisplay():
                 ]
                 y += 8
                 for line in lines:
-                    text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
+                    text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
                     textRect = text.get_rect()
-                    textRect.topleft = (32, y)
+                    textRect.topleft = (22, y)
                     self.screen.blit(text, textRect)
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
@@ -558,6 +562,12 @@ class RadarDisplay():
                         self.trailsNone()
                     elif event.key in (K_a, ):
                         self.autoRange = True
+                    elif event.key in (K_d, ):
+                        self.infoMode = DETAILS_MODE
+                    elif event.key in (K_i, ):
+                        self.infoMode = INFO_MODE
+                    elif event.key in (K_s, ):
+                        self.infoMode = SUMMARY_MODE
                     elif event.key in (K_m, ):
                         self.autoRange = False
                     elif event.key in (K_h, ):
