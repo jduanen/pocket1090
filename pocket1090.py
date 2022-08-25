@@ -125,7 +125,7 @@ def run(options):
         uids = aircraftInfo.keys()
         tracks = {k: v for k,v in tracks.items() if k in uids}
 
-        if radar.render(heading, selfLocation, tracks):
+        if radar.render((heading, roll, pitch), selfLocation, curTime, tracks):
             running = False
     radar.quit()
     print("DONE")
