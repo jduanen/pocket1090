@@ -531,8 +531,12 @@ class RadarDisplay():
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
                         break
+            text = self.summaryFont.render(f"{len(table)}", True, self.summaryFontColor, self.bgColor)
+            textRect = text.get_rect()
+            textRect.bottomleft = (2, (self.diameter - 2))
         with self.lock:
             self.screen.blit(self.radarSurface, (0, 0))
+            self.screen.blit(text, textRect)
             pygame.display.flip()
             r = not self.running
         return r
