@@ -88,6 +88,7 @@ class RadarDisplay():
         self.trails = 0
         self.avgRSSI = 0
         self.infoMode = SUMMARY_MODE
+        self.farthest = False
 
         #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
@@ -175,9 +176,9 @@ class RadarDisplay():
                 self.rangeDown()
         elif buttonGroup == "Tracks":
             if buttonName == "Nearest":
-                print("NEAR")  #### FIXME
+                self.farthest = False
             elif buttonName == "Farthest":
-                print("FAR")  #### FIXME
+                self.farthest = True
         elif buttonGroup == "Trails":
             if buttonName == "All":
                 self.trailsMax()
@@ -469,9 +470,10 @@ class RadarDisplay():
         if len(tracks) < 1:
             self._initScreen(orientation[0])  #### TODO figure out if I need this here
         else:
-            sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
+            sortedTracks = sorted(tracks.values(), key=lambda t: t.distance, reverse=self.farthest)
             if self.autoRange:
-                maxDist = sortedTracks[-1].distance
+                indx = 0 if self.farthest else -1
+                maxDist = sortedTracks[indx].distance
                 logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
                 with self.lock:
                     self._setMaxDistance(maxDist)
