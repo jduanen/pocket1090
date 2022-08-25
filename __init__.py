@@ -102,6 +102,8 @@ class Category(Enum):
 
 @dataclass
 class Coordinate:
+    """ #### TODO
+    """
     x: float
     y: float
 
@@ -117,3 +119,10 @@ class Coordinate:
         new.x = new.x if new.x >= 0.0 else 0.0
         new.y -= other.y
         new.y = new.y if new.y >= 0.0 else 0.0
+
+def cpuTemp():
+    """ #### TODO
+    """
+    with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+        mC = float(f.read().strip())
+        return (mC / 1000.0)
