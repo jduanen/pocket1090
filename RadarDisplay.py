@@ -84,6 +84,8 @@ class RadarDisplay():
         self.ringRadii = [int(self.diameter / (2 * n)) for n in RING_DIVISORS]
 
         self.trails = 0
+        self.avgRSSI = 0
+        self.infoMode = SUMMARY_MODE
 
         #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
@@ -106,8 +108,6 @@ class RadarDisplay():
         self.ringFontColor = self.ringFontInfo[2]
         self.summaryFont = pygame.font.SysFont(self.summaryFontInfo[0], self.summaryFontInfo[1])
         self.summaryFontColor = self.summaryFontInfo[2]
-
-        self.infoMode = SUMMARY_MODE
 
         flags = DOUBLEBUF
         if fullScreen:
@@ -458,12 +458,12 @@ class RadarDisplay():
         self.trails = 0
         logging.info(f"Trails: {self.trails}")
 
-    def render(self, rotation, selfLocation, tracks):
-        """Render the screen with the given rotation and location
+    def render(self, orientation, selfLocation, currentTime, tracks):
+        """Render the screen with the given orientation and location
           #### TODO
         """
         if len(tracks) < 1:
-            self._initScreen(rotation)  #### TODO figure out if I need this here
+            self._initScreen(orientation[0])  #### TODO figure out if I need this here
         else:
             sortedTracks = sorted(tracks.values(), key=lambda t: t.distance)
             if self.autoRange:
@@ -471,7 +471,7 @@ class RadarDisplay():
                 logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
                 with self.lock:
                     self._setMaxDistance(maxDist)
-            self._initScreen(rotation)
+            self._initScreen(orientation[0])
 
             if self.verbose >= 2:
                 print("flight      alt.  speed   dir.  dist.   azi.  cat.")
@@ -493,7 +493,7 @@ class RadarDisplay():
                 self._renderSymbol(track, selfLocation, self.trails)
             if self.verbose >= 2:
                 print("")
-            y = self.diameter + self.buttonHeight + 2
+            y = self.diameter + self.buttonHeight + 4
             self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
             if self.infoMode == SUMMARY_MODE:
                 columns = ["Flight", "Feet", "Knots", "Heading", "Dist.", "Azimuth", "Cat.", "RSSI"]
@@ -501,7 +501,7 @@ class RadarDisplay():
                 for line in t.split('\n'):
                     text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
                     textRect = text.get_rect()
-                    textRect.topleft = (25, y)
+                    textRect.topleft = (20, y)
                     self.screen.blit(text, textRect)
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
@@ -509,7 +509,22 @@ class RadarDisplay():
             elif self.infoMode == DETAILS_MODE:
                 print("TODO")
             elif self.infoMode == INFO_MODE:
-                print("TODO")
+                lines = [
+                    f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
+                    f"Location:        {selfLocation}",
+                    f"Time:            {currentTime} UTC",
+                    f"Average RSSI:    {self.avgRSSI} dBFS",
+                    f"CPU Temperature: {cpuTemp()} C"
+                ]
+                y += 8
+                for line in lines:
+                    text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
+                    textRect = text.get_rect()
+                    textRect.topleft = (32, y)
+                    self.screen.blit(text, textRect)
+                    y += textRect.h + 2
+                    if y >= self.windowSize[1]:
+                        break
         with self.lock:
             self.screen.blit(self.radarSurface, (0, 0))
             pygame.display.flip()
