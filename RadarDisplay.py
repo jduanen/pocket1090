@@ -26,21 +26,24 @@ DEF_WINDOW_SIZE = (480, 800)
 
 DEF_BACKGROUND_COLOR = (32, 32, 32)
 DEF_RANGE_RING_COLOR = (128, 128, 0)
-DEF_RING_FONT_COLOR = (192, 0, 192)
-DEF_TRACK_FONT_COLOR = (0, 240, 0)
 DEF_VECTOR_COLOR = (0, 240, 0)
 DEF_TRAIL_COLOR = (128, 128, 128)
 DEF_SELF_COLOR = (255, 0, 0)
 DEF_COLORS = {
     'bgColor': DEF_BACKGROUND_COLOR,
     'ringColor': DEF_RANGE_RING_COLOR,
-    'ringFontColor': DEF_RING_FONT_COLOR,
-    'trackFontColor': DEF_TRACK_FONT_COLOR,
     'vectorColor': DEF_VECTOR_COLOR,
     'trailColor': DEF_TRAIL_COLOR,
     'selfColor': DEF_SELF_COLOR
 }
-FONT_SIZE = 10
+DEF_SYMBOL_FONT_COLOR = (0, 240, 0)
+DEF_RING_FONT_COLOR = (192, 0, 192)
+DEF_SUMMARY_FONT_COLOR = (0xFF, 0xBF, 0x00)
+DEF_FONT_INFO = {
+    'symbolFont': ("freesansbold.ttf", 10, DEF_SYMBOL_FONT_COLOR),
+    'ringFont': ("freesansbold.ttf", 10, DEF_RING_FONT_COLOR),
+    'summaryFont': ("FreeMono, Monospace", 10, DEF_SUMMARY_FONT_COLOR)
+}
 MAX_SYMBOL_SIZE = 5
 ALL_CATEGORIES = (f"{letter}{number}" for letter in ("A", "B", "C", "D", "E") for number in range(8))
 TRACKED_CATEGORIES = (*ALL_CATEGORIES, "?")
@@ -48,9 +51,15 @@ ROTATE_SYMBOL = ("A1", "A2", "A3", "A4", "A5", "A6")
 DEF_MAX_DISTANCE = 64
 RING_DIVISORS = (8, 4, 2, 1.333333, 1)
 
+INFO_MODE    = 0
+SUMMARY_MODE = 1
+DETAILS_MODE = 2
+
 
 class RadarDisplay():
-    def __init__(self, assetsPath, windowSize=DEF_WINDOW_SIZE, maxDistance=DEF_MAX_DISTANCE, diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fullScreen=False, verbose=False):
+    def __init__(self, assetsPath, windowSize=DEF_WINDOW_SIZE, maxDistance=DEF_MAX_DISTANCE,
+                 diameter=DEF_DISPLAY_DIAMETER, colors=DEF_COLORS, fontInfo=DEF_FONT_INFO,
+                 fullScreen=False, verbose=False):
         self.assetsPath = assetsPath
         if not os.path.exists(assetsPath):
             logging.error(f"Invalid path to assets directory: {assetsPath}")
@@ -62,11 +71,12 @@ class RadarDisplay():
         self.diameter = diameter
         self.bgColor = colors['bgColor']
         self.ringColor = colors['ringColor']
-        self.ringFontColor = colors['ringFontColor']
-        self.trackFontColor = colors['trackFontColor']
         self.vectorColor = colors['vectorColor']
         self.trailColor = colors['trailColor']
         self.selfColor = colors['selfColor']
+        self.symbolFontInfo = fontInfo['symbolFont']
+        self.ringFontInfo = fontInfo['ringFont']
+        self.summaryFontInfo = fontInfo['summaryFont']
         self.fullScreen = fullScreen
         self.verbose = verbose
 
@@ -77,11 +87,28 @@ class RadarDisplay():
 
         #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
-        pygame.font.init()
-        if False:
-            #print(f"\nFonts: {pygame.font.get_fonts()}\n")
-            print(f"\nFonts: {pygame.font.get_default_font()}\n")
+        if self.verbose:
             print(f"\nDisplay: \n{pygame.display.Info()}\n{pygame.display.get_driver()} {pygame.display.list_modes()}\n")
+
+        pygame.font.init()
+        if self.verbose:
+            print(f"\nFonts: {pygame.font.get_default_font()}\n")
+        fonts = pygame.font.get_fonts()
+        for fontName, fontSize, fontColor in (self.symbolFontInfo, self.ringFontInfo, self.summaryFontInfo):
+            '''
+            if fontName not in fonts:
+                logging.error(f"Font '{fontName}' not available")
+                raise RuntimeError("Invalid font")
+            '''
+        self.symbolFont = pygame.font.Font(self.symbolFontInfo[0], self.symbolFontInfo[1])
+        self.symbolFontColor = self.symbolFontInfo[2]
+        self.ringFont = pygame.font.Font(self.ringFontInfo[0], self.ringFontInfo[1])
+        self.ringFontColor = self.ringFontInfo[2]
+        self.summaryFont = pygame.font.SysFont(self.summaryFontInfo[0], self.summaryFontInfo[1])
+        self.summaryFontColor = self.summaryFontInfo[2]
+
+        self.infoMode = SUMMARY_MODE
+
         flags = DOUBLEBUF
         if fullScreen:
             flags |= FULLSCREEN
@@ -90,7 +117,6 @@ class RadarDisplay():
             print(f"Screen Size: {self.screen.get_size()}")
         self.radarSurface = pygame.Surface((self.diameter, self.diameter))
         pygame.display.set_caption('Radar Display')
-        self.font = pygame.font.Font('freesansbold.ttf', FONT_SIZE)
         self.rangeRings = pygame.Surface((self.diameter, self.diameter))
         self.autoRange = True
 
@@ -98,8 +124,8 @@ class RadarDisplay():
 
         self._setMaxDistance(maxDistance)
         self._createSelfSymbol()
-        self._createButtons()
         self._createSymbols()
+        self._createButtons()
         self._initScreen(None)
 
         self.running = True
@@ -134,7 +160,6 @@ class RadarDisplay():
         """ #### TODO
         """
         #### FIXME implement the handler for each button -- 1:1 with keyboard inputs
-        print(f"{buttonGroup}_{buttonName}")  #### TMP TMP TMP
         if buttonGroup == "Range":
             if buttonName == "Auto":
                 self.autoRange = True
@@ -158,18 +183,19 @@ class RadarDisplay():
                 self.trailsMore()
             elif buttonName == " v ":
                 self.trailsLess()
-        elif buttonGroup == "Other":
+        elif buttonGroup == "Mode":
+            if buttonName == "Summary":
+                self.infoMode = SUMMARY_MODE
             if buttonName == "Details":
-                print("DETAILS")  #### FIXME
+                self.infoMode = DETAILS_MODE
             elif buttonName == "Info":
-                print("INFO")  #### FIXME
-            elif buttonName == "Quit":
-                self.running = False
+                self.infoMode = INFO_MODE
+
 
     def _createButtons(self):
         """ #### TODO
         """
-        LABELS = ("Range", "Tracks", "Trails", "Other")
+        LABELS = ("Range", "Tracks", "Trails", "Mode")
         LABEL_WIDTH = int(round((self.diameter / len(LABELS))))
         LABEL_HEIGHT = 12
         self.labels = {}
@@ -188,7 +214,7 @@ class RadarDisplay():
             ("Auto", "Manual", " ^ ", " v "),
             ("Nearest", "Farthest"),
             ("All", "None", " ^ ", " v "),
-            ("Details", "Info", "Quit")]
+            ("Summary", "Details", "Info")]
         BUTTON_HEIGHT = 12
         self.buttons = {}
         for indx, labels in enumerate(BUTTON_LABELS):
@@ -212,6 +238,7 @@ class RadarDisplay():
                     onClickParams=(LABELS[indx], b),
                     onClick=self._buttonHandler)
                 x += buttonWidth
+        self.buttonHeight = (LABEL_HEIGHT * 2) + 1
 
     def _createSymbols(self):
         """Create all symbols and draw on the symbols surface
@@ -289,13 +316,13 @@ class RadarDisplay():
             endPt = pygame.math.Vector2(startPt + pygame.math.Vector2(length, 0).rotate(angle))
             pygame.draw.line(self.radarSurface, self.vectorColor, startPt, endPt, 1)
 
-        text = self.font.render(f"{track.flightNumber}", True, self.trackFontColor, self.bgColor)
+        text = self.symbolFont.render(f"{track.flightNumber}", True, self.symbolFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midbottom = (trackPosition[0], (trackPosition[1] - 5))
         self.radarSurface.blit(text, textRect)
 
-        text = self.font.render(f"{track.altitude}", True, self.trackFontColor, self.bgColor)
+        text = self.symbolFont.render(f"{track.altitude}", True, self.symbolFontColor, self.bgColor)
         text.set_colorkey(self.bgColor)
         textRect = text.get_rect()
         textRect.midtop = (trackPosition[0], (trackPosition[1] + 7))
@@ -346,7 +373,7 @@ class RadarDisplay():
         for ringRadius, ringDistance in zip(self.ringRadii, self.ringDistances):
             pygame.draw.circle(self.rangeRings, self.ringColor, astuple(self.center), ringRadius, 1)
 
-            text = self.font.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
+            text = self.ringFont.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
             if ringDistance == self.maxDistance:
                 textRect.center = (self.center.x, (self.center.y - ringRadius + floor(textRect.h / 2)))
@@ -454,7 +481,7 @@ class RadarDisplay():
                 alt = track.altitude if isinstance(track.altitude, int) else " "
                 speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
                 heading = round(track.heading, 1) if isinstance(track.heading, float) else " "
-                table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category])
+                table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category, track.rssi])
                 if self.verbose >= 2:
                     alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
                     speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
@@ -466,10 +493,24 @@ class RadarDisplay():
                 self._renderSymbol(track, selfLocation, self.trails)
             if self.verbose >= 2:
                 print("")
-            columns = ["flight", "alt.", "speed", "dir.", "dist.", "azi.", "cat."]
-            print(tabulate(table, headers=columns))
+            y = self.diameter + self.buttonHeight + 2
+            self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
+            if self.infoMode == SUMMARY_MODE:
+                columns = ["Flight", "Feet", "Knots", "Heading", "Dist.", "Azimuth", "Cat.", "RSSI"]
+                t = tabulate(table, headers=columns)
+                for line in t.split('\n'):
+                    text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
+                    textRect = text.get_rect()
+                    textRect.topleft = (25, y)
+                    self.screen.blit(text, textRect)
+                    y += textRect.h + 2
+                    if y >= self.windowSize[1]:
+                        break
+            elif self.infoMode == DETAILS_MODE:
+                print("TODO")
+            elif self.infoMode == INFO_MODE:
+                print("TODO")
         with self.lock:
-            print("RENDER") #### TMP TMP TMP
             self.screen.blit(self.radarSurface, (0, 0))
             pygame.display.flip()
             r = not self.running
@@ -478,7 +519,6 @@ class RadarDisplay():
     def _eventHandler(self):
         """#### TODO
         """
-        print("STARTING HANDLER")  #### TMP TMP TMP
         while self.running:
             events = pygame.event.get()
             for event in events:
@@ -529,7 +569,6 @@ class RadarDisplay():
                         pass
             with self.lock:
                 pygame_widgets.update(events)
-        print("EXITING HANDLER")  #### TMP TMP TMP
 
     def quit(self):
         pygame.quit()
