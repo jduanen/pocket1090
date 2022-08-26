@@ -6,10 +6,12 @@
 
 from collections import namedtuple
 from dataclasses import astuple
+from datetime import datetime
 import logging
-from math import floor
+from math import dist, floor
 import os
 import threading
+import time
 
 import pygame
 from pygame.locals import *
@@ -92,6 +94,10 @@ class RadarDisplay():
         self.trails = 0
         self.infoMode = SUMMARY_MODE
         self.farthest = False
+        self.selectedTrack = None
+
+        self.tz = time.tzname[time.daylight]
+
         #### TODO make stats class that includes all the info I want to keep track of and call methods on it from here
         '''
         self.uids = {}
@@ -139,6 +145,8 @@ class RadarDisplay():
         pygame.display.set_caption('Radar Display')
         self.rangeRings = pygame.Surface((self.diameter, self.diameter))
         self.autoRange = True
+
+        self.trackPositions = []
 
         self.lock = threading.Lock()
 
@@ -422,6 +430,7 @@ class RadarDisplay():
         s = pygame.transform.rotate(symbol, newAngle) if track.category in ROTATE_SYMBOL else symbol
         self.radarSurface.blit(s, ((trackPosition[0] - floor(s.get_width() / 2)),
                                    (trackPosition[1] - floor(s.get_height() / 2))))
+        return trackPosition
 
     def _createSelfSymbol(self):
         """Draw the device symbol onto the selfSymbol surface
@@ -485,6 +494,30 @@ class RadarDisplay():
         self._renderRangeRings()
         self._renderSelfSymbol(rotation)
 
+    def _getSelectedTrack(self, location):
+        """ #### TODO
+          assume always have small number of tracks so don't have to worry about performance
+        """
+        if (location[1] > self.diameter):
+            return None
+        minDist = 10
+        nearestTrack = None
+        if self.trackPositions:
+            for position, track in self.trackPositions:
+                d = dist(location, position)
+                if d < minDist:
+                    minDist = d
+                    nearestTrack = track
+        return nearestTrack
+        '''
+        ? = []
+        tree = spatial.KDTree(?)
+        nearestTrack = tree.query([location])
+        print("TTTT", nearestTrack)
+        if nearestTrack?:
+            return nearestTrack
+        '''
+
     def getRange(self):
         """Return the current max distance (in Km)
           #### TODO
@@ -528,6 +561,7 @@ class RadarDisplay():
         """
         if len(tracks) < 1:
             self._initScreen(orientation[0])  #### TODO figure out if I need this here
+            text = None
         else:
             sortedTracks = sorted(tracks.values(), key=lambda t: t.distance, reverse=self.farthest)
             if self.autoRange:
@@ -542,6 +576,7 @@ class RadarDisplay():
                 print("flight      alt.  speed   dir.  dist.   azi.  cat.")
                 print("--------  ------  -----  -----  -----  -----  ----")
             table = []
+            self.trackPositions = []
             for track in sortedTracks:
                 alt = track.altitude if isinstance(track.altitude, int) else " "
                 speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
@@ -555,7 +590,8 @@ class RadarDisplay():
                 if self.verbose >= 2:
                     print(track)
                 #### TODO implement per-track trails, for now do them all the same
-                self._renderSymbol(track, selfLocation, self.trails)
+                pos = self._renderSymbol(track, selfLocation, self.trails)
+                self.trackPositions.append((pos, track))
             if self.verbose >= 2:
                 print("")
             y = self.diameter + self.buttonHeight + 4
@@ -572,7 +608,40 @@ class RadarDisplay():
                     if y >= self.windowSize[1]:
                         break
             elif self.infoMode == DETAILS_MODE:
-                print("TODO")
+                #if self.selectedTrack not in ?:
+                #    self.selectedTrack = None
+                if self.selectedTrack:
+                    trk = self.selectedTrack
+                    alt = f"{trk.altitude: >6}" if isinstance(trk.altitude, int) else "      "
+                    speed = f"{trk.speed:5.1f}" if isinstance(trk.speed, float) else "     "
+                    heading = f"{trk.heading:5.1f}" if isinstance(trk.heading, float) else "     "
+                    lines = [
+                        f"UniqueId:       {trk.uniqueId}",
+                        f"Flight Number:  {trk.flightNumber}",
+                        f"Baro Altitude:  {trk.altitude} FASL",
+                        f"Ground Speed:   {trk.speed} knots",
+                        f"Track Heading:  {trk.heading} deg",
+                        f"Category:       {trk.category}",
+                        f"Latitude:       {trk.lat}",
+                        f"Longitude:      {trk.lon}",
+                        f"Distance to:    {trk.distance} Km",
+                        f"Azimuth to:     {trk.azimuth} deg",
+                        f"Last Seen:      {trk.seen} secs",
+                        f"Last Position:  {trk.seenPos} secs",
+                        f"RSSI:           {trk.rssi} dBFS",
+                        f"Timestamp:      {datetime.fromtimestamp(trk.timestamp).isoformat()} {self.tz}",
+                        f"Location:       {trk.location}"
+                    ]
+                    y += 8
+                    for line in lines:
+                        text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
+                        textRect = text.get_rect()
+                        textRect.topleft = (12, y)
+                        self.screen.blit(text, textRect)
+                        y += textRect.h + 2
+                        if y >= self.windowSize[1]:
+                            print("XXXX")
+                            break
             elif self.infoMode == INFO_MODE:
                 #### TODO add stats from Stats object
                 lines = [
@@ -595,7 +664,8 @@ class RadarDisplay():
             textRect.bottomleft = (2, (self.diameter - 2))
         with self.lock:
             self.screen.blit(self.radarSurface, (0, 0))
-            self.screen.blit(text, textRect)
+            if text:
+                self.screen.blit(text, textRect)
             pygame.display.flip()
             r = not self.running
         return r
@@ -657,6 +727,11 @@ class RadarDisplay():
                         pass
                     elif event.key == K_DOWN:
                         pass
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mousePresses = pygame.mouse.get_pressed()
+                    if mousePresses[0]:
+                        mouseLocation = pygame.mouse.get_pos()
+                        self.selectedTrack = self._getSelectedTrack(mouseLocation)
             with self.lock:
                 pygame_widgets.update(events)
 
