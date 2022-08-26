@@ -49,6 +49,18 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 ## SW
 
 ### Raspberry Pi Zero 2W
+* Set up for LCD Panel
+  - install raspi os
+  - edit /boot/config.txt
+    * add to end of file
+hdmi_group=2
+hdmi_mode=87 
+hdmi_timings=480 0 40 10 80 800 0 13 3 32 0 0 0 60 0 32000000 dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
+hdmi_drive=1
+hdmi_force_hotplug=1
+  - setup xinput-calibrator
+    * sudo apt-get install xserver-xorg-input-evdev xinput-calibrator
+
 * Prepare SW Environment
   - update pygame
     * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
@@ -57,6 +69,19 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
     * 'pip3 install pygame==2'
   - also install missing package:
     * 'sudo apt-get install libsdl2-image-2.0-0'
+    * sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf
+    * edit conf file
+      - sudo ex /usr/share/X11/xorg.conf.d/99-calibration.conf
+      - add to file:
+Section "InputClass"
+        Identifier      "calibration"
+        MatchProduct    "ADS7846 Touchscreen"
+        Option  "Calibration"   "208 3905 288 3910"
+        Option  "SwapAxes"      "0"
+        Option "EmulateThirdButton" "1"
+        Option "EmulateThirdButtonTimeout" "1000"
+        Option "EmulateThirdButtonMoveThreshold" "300"
+EndSection
 
 ### GPS Receiver
 * Enable serial port without console
