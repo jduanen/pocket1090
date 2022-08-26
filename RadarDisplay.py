@@ -56,6 +56,10 @@ INFO_MODE    = 0
 SUMMARY_MODE = 1
 DETAILS_MODE = 2
 
+BUTTON_INACTIVE_COLOR = (160, 160, 160)
+BUTTON_PRESSED_COLOR = (96, 96, 96)
+BUTTON_HOVER_COLOR = (192, 192, 192)
+
 
 class RadarDisplay():
     def __init__(self, assetsPath, windowSize=DEF_WINDOW_SIZE, maxDistance=DEF_MAX_DISTANCE,
@@ -86,9 +90,20 @@ class RadarDisplay():
         self.ringRadii = [int(self.diameter / (2 * n)) for n in RING_DIVISORS]
 
         self.trails = 0
-        self.avgRSSI = 0
         self.infoMode = SUMMARY_MODE
         self.farthest = False
+        #### TODO make stats class that includes all the info I want to keep track of and call methods on it from here
+        '''
+        self.uids = {}
+        self.minRSSI = Null
+        self.maxRSSI = Null
+        self.avgRSSI = Null
+        self.maxSpeed = Null
+        self.minSpeed = Null
+        self.maxAltitude = Null
+        self.minAltitude = Null
+        self.categories = {f"{l}{n}": 0 for l, n in pd(['A', 'B', 'C', 'D', 'E'], list(range(8)))}
+        '''
 
         #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
@@ -131,6 +146,7 @@ class RadarDisplay():
         self._createSelfSymbol()
         self._createSymbols()
         self._createButtons()
+        self._setButtons()
         self._initScreen(None)
 
         self.running = True
@@ -161,41 +177,109 @@ class RadarDisplay():
         y = -(distPx * math.cos(math.radians(azimuth))) + (self.diameter / 2.0)
         return (x, y)
 
+    def _setButtons(self):
+        """ #### TODO
+        """
+        if self.autoRange:
+            self.buttons["Range_Auto"].setInactiveColour(BUTTON_PRESSED_COLOR)
+            self.buttons["Range_Manual"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+        else:
+            self.buttons["Range_Auto"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Range_Manual"].setInactiveColour(BUTTON_PRESSED_COLOR)
+
+        if self.farthest:
+            self.buttons["Tracks_Nearest"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Tracks_Farthest"].setInactiveColour(BUTTON_PRESSED_COLOR)
+        else:
+            self.buttons["Tracks_Nearest"].setInactiveColour(BUTTON_PRESSED_COLOR)
+            self.buttons["Tracks_Farthest"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+
+        if self.trails < 0:
+            self.buttons["Trails_All"].setInactiveColour(BUTTON_PRESSED_COLOR)
+            self.buttons["Trails_None"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+        elif self.trails == 0:
+            self.buttons["Trails_All"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Trails_None"].setInactiveColour(BUTTON_PRESSED_COLOR)
+        else:
+            self.buttons["Trails_All"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Trails_None"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+
+        if self.infoMode == SUMMARY_MODE:
+            self.buttons["Mode_Summary"].setInactiveColour(BUTTON_PRESSED_COLOR)
+            self.buttons["Mode_Details"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Mode_Info"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+        elif self.infoMode == DETAILS_MODE:
+            self.buttons["Mode_Summary"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Mode_Details"].setInactiveColour(BUTTON_PRESSED_COLOR)
+            self.buttons["Mode_Info"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+        elif self.infoMode == DETAILS_MODE:
+            self.buttons["Mode_Summary"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Mode_Details"].setInactiveColour(BUTTON_INACTIVE_COLOR)
+            self.buttons["Mode_Info"].setInactiveColour(BUTTON_PRESSED_COLOR)
+
     def _buttonHandler(self, buttonGroup, buttonName):
         """ #### TODO
         """
-        #### FIXME implement the handler for each button -- 1:1 with keyboard inputs
+        #### TODO reflect current state with "pressed" color and update appropriately
+        dirty = False
         if buttonGroup == "Range":
             if buttonName == "Auto":
-                self.autoRange = True
+                if self.autoRange is False:
+                    self.autoRange = True
+                    dirty = True
             elif buttonName == "Manual":
-                self.autoRange = False
+                if self.autoRange is True:
+                    self.autoRange = False
+                    dirty = True
             elif buttonName == " ^ ":
+                if self.autoRange is True:
+                    self.autoRange = False
+                    dirty = True
                 self.rangeUp()
             elif buttonName == " v ":
+                if self.autoRange is True:
+                    self.autoRange = False
+                    dirty = True
                 self.rangeDown()
         elif buttonGroup == "Tracks":
             if buttonName == "Nearest":
-                self.farthest = False
+                if self.farthest is True:
+                    self.farthest = False
+                    dirty = True
             elif buttonName == "Farthest":
-                self.farthest = True
+                if self.farthest is False:
+                    self.farthest = True
+                    dirty = True
         elif buttonGroup == "Trails":
             if buttonName == "All":
-                self.trailsMax()
+                if self.trails >= 0:
+                    self.trails = -1
+                    dirty = True
             elif buttonName == "None":
-                self.trailsNone()
+                if self.trails != 0:
+                    self.trails = 0
+                    dirty = True
             elif buttonName == " ^ ":
-                self.trailsMore()
+                if self.trails <= 0:
+                    self.trails += 1
+                    dirty = True
             elif buttonName == " v ":
-                self.trailsLess()
+                self.trails -= 1
         elif buttonGroup == "Mode":
             if buttonName == "Summary":
-                self.infoMode = SUMMARY_MODE
+                if self.infoMode != SUMMARY_MODE:
+                    self.infoMode = SUMMARY_MODE
+                    dirty = True
             if buttonName == "Details":
-                self.infoMode = DETAILS_MODE
+                if self.infoMode != DETAILS_MODE:
+                    self.infoMode = DETAILS_MODE
+                    dirty = True
             elif buttonName == "Info":
-                self.infoMode = INFO_MODE
-
+                if self.infoMode != INFO_MODE:
+                    self.infoMode = INFO_MODE
+                    dirty = True
+        if dirty:
+            self._setButtons()
 
     def _createButtons(self):
         """ #### TODO
@@ -237,9 +321,9 @@ class RadarDisplay():
                     x + 1, y,
                     buttonWidth - 2, BUTTON_HEIGHT,
                     text=b, fontSize=14, margin=2,
-                    inactiveColour=(160, 160, 160),
-                    hoverColour=(96, 96, 96),
-                    pressedColour=(192, 192, 192),
+                    inactiveColour=BUTTON_INACTIVE_COLOR,
+                    hoverColour=BUTTON_HOVER_COLOR,
+                    pressedColour=BUTTON_PRESSED_COLOR,
                     onClickParams=(LABELS[indx], b),
                     onClick=self._buttonHandler)
                 x += buttonWidth
@@ -253,10 +337,10 @@ class RadarDisplay():
         symbols = {}
         for cat in TRACKED_CATEGORIES:
             if cat == "?":
-                diameter = 9
-                s = pygame.Surface((diameter, diameter))
                 s.fill(self.bgColor)
                 s.set_colorkey(self.bgColor)
+                diameter = 9
+                s = pygame.Surface((diameter, diameter))
                 d = floor(diameter / 2)
                 pygame.draw.circle(s, (0, 148, 255), (d, d), d)
                 symbols[cat] = s
@@ -438,31 +522,6 @@ class RadarDisplay():
         """
         self.autoRange = True
 
-    def trailsLess(self):
-        """ #### TODO
-        """
-        if self.trails > 0:
-            self.trails -= 1
-        logging.info(f"Trails: {self.trails}")
-
-    def trailsMore(self):
-        """ #### TODO
-        """
-        self.trails += 1
-        logging.info(f"Trails: {self.trails}")
-
-    def trailsMax(self):
-        """ #### TODO
-        """
-        self.trails = -1
-        logging.info(f"Trails: {self.trails}")
-
-    def trailsNone(self):
-        """ #### TODO
-        """
-        self.trails = 0
-        logging.info(f"Trails: {self.trails}")
-
     def render(self, orientation, selfLocation, currentTime, tracks):
         """Render the screen with the given orientation and location
           #### TODO
@@ -515,11 +574,11 @@ class RadarDisplay():
             elif self.infoMode == DETAILS_MODE:
                 print("TODO")
             elif self.infoMode == INFO_MODE:
+                #### TODO add stats from Stats object
                 lines = [
                     f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
                     f"Location:        {selfLocation}",
                     f"Time:            {currentTime} UTC",
-                    f"Average RSSI:    {self.avgRSSI} dBFS",
                     f"CPU Temperature: {cpuTemp()} C"
                 ]
                 y += 8
@@ -551,13 +610,13 @@ class RadarDisplay():
                     self.running = False
                 if event.type == KEYDOWN:
                     if event.key == K_LEFT:
-                        self.trailsLess()
+                        self.trails -= 1
                     elif event.key == K_RIGHT:
-                        self.trailsMore()
+                        self.trails += 1
                     elif event.key == K_HOME:
-                        self.trailsNone()
+                        self.trails = 0
                     elif event.key == K_END:
-                        self.trailsMax()
+                        self.trails = -1
                     elif event.key == K_UP:
                         self.rangeUp()
                     elif event.key == K_DOWN:
