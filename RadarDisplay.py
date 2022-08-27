@@ -19,6 +19,7 @@ import pygame_widgets
 from pygame_widgets.button import Button
 from tabulate import tabulate
 
+from TrackStats import TrackStats
 from __init__ import * #### FIXME
 
 
@@ -98,20 +99,6 @@ class RadarDisplay():
 
         self.tz = time.tzname[time.daylight]
 
-        #### TODO make stats class that includes all the info I want to keep track of and call methods on it from here
-        '''
-        self.uids = {}
-        self.minRSSI = Null
-        self.maxRSSI = Null
-        self.avgRSSI = Null
-        self.maxSpeed = Null
-        self.minSpeed = Null
-        self.maxAltitude = Null
-        self.minAltitude = Null
-        self.categories = {f"{l}{n}": 0 for l, n in pd(['A', 'B', 'C', 'D', 'E'], list(range(8)))}
-        '''
-
-        #### TODO make the screen update/input polling loop be a separate thread
         pygame.init()
         if self.verbose:
             print(f"\nDisplay: \n{pygame.display.Info()}\n{pygame.display.get_driver()} {pygame.display.list_modes()}\n")
@@ -147,6 +134,7 @@ class RadarDisplay():
         self.autoRange = True
 
         self.trackPositions = []
+        self.stats = TrackStats()
 
         self.lock = threading.Lock()
 
@@ -228,7 +216,6 @@ class RadarDisplay():
     def _buttonHandler(self, buttonGroup, buttonName):
         """ #### TODO
         """
-        #### TODO reflect current state with "pressed" color and update appropriately
         dirty = False
         if buttonGroup == "Range":
             if buttonName == "Auto":
@@ -388,7 +375,6 @@ class RadarDisplay():
           Add flightNumber and altitude as text next to the symbol
         """
         #### FIXME make symbols overwrite tracks (aot the converse, which is happening now)
-        #### FIXME make rotation of symbol match vector
         #### FIXME improve handling of interesting things -- log altitude/speed (above/below thresholds), emergencies, special categories
         #### TODO consider adding notifications for interesting events -- e.g., SMS when military aircraft, fast/high, etc.
         #### TODO improve the symbols -- bigger, more colors?
@@ -447,7 +433,6 @@ class RadarDisplay():
             selfSymbol = pygame.Surface(((2 * delta), (2 * delta)))
             selfSymbol.fill(self.bgColor)
             selfSymbol.set_colorkey(self.bgColor)
-            #### TODO replace this with a bitmap file glyph
             pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), (delta, (2 * delta)))
             pygame.draw.line(selfSymbol, self.selfColor, ((0.75 * delta), delta), ((1.25 * delta) + 1, delta))
             pygame.draw.line(selfSymbol, self.selfColor, (delta, 0), ((0.5 * delta), (0.5 * delta)))
@@ -504,6 +489,10 @@ class RadarDisplay():
         nearestTrack = None
         if self.trackPositions:
             for position, track in self.trackPositions:
+                if not isinstance(position, tuple):
+                    print("PPPP", type(position))
+                if not isinstance(location, tuple):
+                    print("LLLL", type(location))
                 d = dist(location, position)
                 if d < minDist:
                     minDist = d
@@ -592,22 +581,24 @@ class RadarDisplay():
                 #### TODO implement per-track trails, for now do them all the same
                 pos = self._renderSymbol(track, selfLocation, self.trails)
                 self.trackPositions.append((pos, track))
+                self.stats.update(track)
             if self.verbose >= 2:
                 print("")
             y = self.diameter + self.buttonHeight + 4
             self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
             if self.infoMode == SUMMARY_MODE:
-                columns = ["Flight", "Feet", "Knots", "Heading", "Dist.", "Azimuth", "Cat.", "RSSI"]
+                columns = ["Flight", "Feet", "Knots", "Head.", "Dist.", "Azi.", "Cat.", "RSSI"]
                 t = tabulate(table, headers=columns)
                 for line in t.split('\n'):
                     text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
                     textRect = text.get_rect()
-                    textRect.topleft = (20, y)
+                    textRect.topleft = (4, y)
                     self.screen.blit(text, textRect)
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
                         break
             elif self.infoMode == DETAILS_MODE:
+                #### FIXME test if track is gone
                 #if self.selectedTrack not in ?:
                 #    self.selectedTrack = None
                 if self.selectedTrack:
