@@ -615,8 +615,8 @@ class RadarDisplay():
                         f"Category:       {trk.category}",
                         f"Latitude:       {trk.lat}",
                         f"Longitude:      {trk.lon}",
-                        f"Distance to:    {trk.distance} Km",
-                        f"Azimuth to:     {trk.azimuth} deg",
+                        f"Distance to:    {trk.distance:.3f} Km",
+                        f"Azimuth to:     {trk.azimuth:.1f} deg",
                         f"Last Seen:      {trk.seen} secs",
                         f"Last Position:  {trk.seenPos} secs",
                         f"RSSI:           {trk.rssi} dBFS",
@@ -635,6 +635,7 @@ class RadarDisplay():
                             break
             elif self.infoMode == INFO_MODE:
                 #### TODO add stats from Stats object
+                self.stats.getStats()
                 lines = [
                     f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
                     f"Location:        {selfLocation}",
