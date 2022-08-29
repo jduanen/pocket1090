@@ -139,6 +139,10 @@ EndSection
 
 ## HW
 
+### Enclosure
+
+*WIP*
+
 ### Raspberry Pi Zero 2W
 * https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/
 
