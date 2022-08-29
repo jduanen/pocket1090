@@ -55,15 +55,18 @@ class TrackStats():
         elif track.category[0] == "?":
             self.unkCategoryCount += 1
 
+        if isinstance(track.rssi, float):
+            self.avgRSSI = (track.rssi / 2) + (self.avgRSSI / 2)
+            self.maxRSSI = track.rssi if track.rssi > self.maxRSSI else self.maxRSSI
+            self.minRSSI = track.rssi if track.rssi < self.minRSSI else self.minRSSI
+
     def getStats(self):
         """ #### TODO
         """
         print(f"Number of UniqueIds: {len(self.uids)}")
-
         print(f"Altitude: min={self.minAltitude}, max={self.maxAltitude}, avg={self.avgAltitude:.2f}")
-
-        print(f"Ground Speed: min={self.minSpeed}, max={self.maxSpeed}, avg={self.avgSpeed:.2f}")
-
+        print(f"Speed:    min={self.minSpeed}, max={self.maxSpeed}, avg={self.avgSpeed:.2f}")
+        print(f"RSSI:     min={self.minRSSI}, max={self.maxRSSI}, avg={self.avgRSSI:.2f}")
         print("Categories:")
         for a in list("ABCDE"):
             print (f"{a}: {self.categoryCounts[a]}")

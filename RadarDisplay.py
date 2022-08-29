@@ -646,7 +646,8 @@ class RadarDisplay():
                     f"CPU Temperature: {cpuTemp()} C",
                     f"Number of Uids:  {len(self.stats.uids)}",
                     f"Altitude Stats:  min={self.stats.minAltitude}, max={self.stats.maxAltitude}, avg={self.stats.avgAltitude:.2f}",
-                    f"Speed Stats:     min={self.stats.minSpeed}, max={self.stats.maxSpeed}, avg={self.stats.avgSpeed:.2f}"
+                    f"Speed Stats:     min={self.stats.minSpeed}, max={self.stats.maxSpeed}, avg={self.stats.avgSpeed:.2f}",
+                    f"RSSI Stats:      min={self.stats.minRSSI}, max={self.stats.maxRSSI}, avg={self.stats.avgRSSI:.2f}"
                     #### TODO add category histogram
                 ]
                 y += 8
