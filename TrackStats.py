@@ -27,12 +27,12 @@ class TrackStats():
         self.categoryCounts = {l: {str(n): 0 for n in range(8)} for l in list("ABCDE")}
         self.unkCategoryCount = 0
 
-        self.minRSSI = 0
         self.maxRSSI = -sys.maxsize
+        self.minRSSI = 0
         self.avgRSSI = 0
 
-        self.minDistance = -1
-        self.maxDistance = sys.maxsize
+        self.maxDistance = -1
+        self.minDistance = sys.maxsize
         self.avgDistance = 0
 
     def update(self, track):
@@ -50,6 +50,11 @@ class TrackStats():
             self.maxSpeed = track.speed if track.speed > self.maxSpeed else self.maxSpeed
             self.minSpeed = track.speed if track.speed < self.minSpeed else self.minSpeed
 
+        if isinstance(track.distance, float):
+            self.avgDistance = (track.distance / 2) + (self.avgDistance / 2)
+            self.maxDistance = track.distance if track.distance > self.maxDistance else self.maxDistance
+            self.minDistance = track.distance if track.distance < self.minDistance else self.minDistance
+
         if track.category[0] in list("ABCDE"):
             self.categoryCounts[track.category[0]][track.category[1]] += 1
         elif track.category[0] == "?":
@@ -66,6 +71,7 @@ class TrackStats():
         print(f"Number of UniqueIds: {len(self.uids)}")
         print(f"Altitude: min={self.minAltitude}, max={self.maxAltitude}, avg={self.avgAltitude:.2f}")
         print(f"Speed:    min={self.minSpeed}, max={self.maxSpeed}, avg={self.avgSpeed:.2f}")
+        print(f"Distance: min={self.minDistance:.2f}, max={self.maxDistance:.2f}, avg={self.avgDistance:.2f}")
         print(f"RSSI:     min={self.minRSSI}, max={self.maxRSSI}, avg={self.avgRSSI:.2f}")
         print("Categories:")
         for a in list("ABCDE"):
