@@ -27,7 +27,10 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
   - greater-/less-than distance
   - heading
 
-### Handheld Device Display
+## Handheld Device
+*TBD*
+
+### Handheld Device Example Display
 ![Device Display 1](screen1.png)
 
 ## Interacting with the Application
@@ -52,6 +55,8 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 ### Raspberry Pi Zero 2W
 * Set up for LCD Panel
   - install raspi os
+
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   - edit /boot/config.txt
     * add to end of file
 hdmi_group=2
@@ -61,15 +66,17 @@ hdmi_drive=1
 hdmi_force_hotplug=1
   - setup xinput-calibrator
     * sudo apt-get install xserver-xorg-input-evdev xinput-calibrator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Prepare SW Environment
-  - update pygame
-    * Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
-    * RasPi: pygame 2.0.0 (SDL 2.0.14, python 3.9.2)
   - install 2.x pygame
-    * 'pip3 install pygame==2'
+    * 'pip3 install pygame==2.1'
+      - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+      - RasPi: pygame 2.1.0 (SDL 2.0.14, python 3.9.2)
   - also install missing package:
     * 'sudo apt-get install libsdl2-image-2.0-0'
+
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     * sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf
     * edit conf file
       - sudo ex /usr/share/X11/xorg.conf.d/99-calibration.conf
@@ -83,6 +90,7 @@ Section "InputClass"
         Option "EmulateThirdButtonTimeout" "1000"
         Option "EmulateThirdButtonMoveThreshold" "300"
 EndSection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ### GPS Receiver
 * Enable serial port without console
@@ -118,6 +126,8 @@ EndSection
   - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
 
 ### pocket1090
+* install pocket1090 repo
+  - 'git clone ?'
 * set up environment
   - 'sudo apt install libsdl2-ttf-2*'
   - 'pip3 install -r requirements.txt'
