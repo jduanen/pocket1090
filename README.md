@@ -129,7 +129,7 @@ EndSection
 * script to install, run, stop, get the status, and remove installation of pocket1090 application
 
 ### Screenshots
-![Desktop Display 1](screen1.png)
+![Desktop Display 1](screen5.png)
 
 ![Desktop Display 2](screen2.png)
 
