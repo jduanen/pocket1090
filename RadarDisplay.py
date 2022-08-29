@@ -154,9 +154,10 @@ class RadarDisplay():
           also sets ring distances and recreates/labels the range rings
           N.B. Distances are in Km
         """
+        prepDist = lambda d: int(d) if d >= 2 else round(d, 2)
         maxD = maxDistance if maxDistance >= 1 else 1
         self.maxDistance = 1 << int(maxD).bit_length()
-        self.ringDistances = [int(self.maxDistance / d) for d in RING_DIVISORS]
+        self.ringDistances = [prepDist(self.maxDistance / d) for d in RING_DIVISORS]
         self._createRangeRings()
 
     def _calcPixelAddr(self, distance, azimuth):
@@ -456,7 +457,7 @@ class RadarDisplay():
         for ringRadius, ringDistance in zip(self.ringRadii, self.ringDistances):
             pygame.draw.circle(self.rangeRings, self.ringColor, astuple(self.center), ringRadius, 1)
 
-            text = self.ringFont.render(f"{ringDistance}km", True, self.ringFontColor, self.bgColor)
+            text = self.ringFont.render(f"{ringDistance}Km", True, self.ringFontColor, self.bgColor)
             textRect = text.get_rect()
             if ringDistance == self.maxDistance:
                 textRect.center = (self.center.x, (self.center.y - ringRadius + floor(textRect.h / 2)))
