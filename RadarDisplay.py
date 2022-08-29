@@ -145,6 +145,8 @@ class RadarDisplay():
         self._setButtons()
         self._initScreen(None)
 
+        self.startTime = datetime.utcnow()
+
         self.running = True
         threading.Thread(target=self._eventHandler, args=(), daemon=True).start()
 
@@ -209,7 +211,7 @@ class RadarDisplay():
             self.buttons["Mode_Summary"].setInactiveColour(BUTTON_INACTIVE_COLOR)
             self.buttons["Mode_Details"].setInactiveColour(BUTTON_PRESSED_COLOR)
             self.buttons["Mode_Info"].setInactiveColour(BUTTON_INACTIVE_COLOR)
-        elif self.infoMode == DETAILS_MODE:
+        elif self.infoMode == INFO_MODE:
             self.buttons["Mode_Summary"].setInactiveColour(BUTTON_INACTIVE_COLOR)
             self.buttons["Mode_Details"].setInactiveColour(BUTTON_INACTIVE_COLOR)
             self.buttons["Mode_Info"].setInactiveColour(BUTTON_PRESSED_COLOR)
@@ -635,13 +637,17 @@ class RadarDisplay():
                             print("XXXX")
                             break
             elif self.infoMode == INFO_MODE:
-                #### TODO add stats from Stats object
-                self.stats.getStats()
+                ##self.stats.getStats()
                 lines = [
+                    f"Start Time:      {self.startTime} UTC",
                     f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
                     f"Location:        {selfLocation}",
                     f"Time:            {currentTime} UTC",
-                    f"CPU Temperature: {cpuTemp()} C"
+                    f"CPU Temperature: {cpuTemp()} C",
+                    f"Number of Uids:  {len(self.stats.uids)}",
+                    f"Altitude Stats:  min={self.stats.minAltitude}, max={self.stats.maxAltitude}, avg={self.stats.avgAltitude:.2f}",
+                    f"Speed Stats:     min={self.stats.minSpeed}, max={self.stats.maxSpeed}, avg={self.stats.avgSpeed:.2f}"
+                    #### TODO add category histogram
                 ]
                 y += 8
                 for line in lines:
