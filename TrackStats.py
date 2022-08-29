@@ -14,7 +14,7 @@ class TrackStats():
     """ #### TODO
     """
     def __init__(self):
-        self.uidLastSeen = {}
+        self.uids = set([])
 
         self.maxAltitude = -1
         self.minAltitude = sys.maxsize
@@ -38,10 +38,7 @@ class TrackStats():
     def update(self, track):
         """ #### TODO
         """
-        waitTime = (5 * 60) # haven't seen in five minutes
-        if ((track.uniqueId not in self.uidLastSeen) or 
-            ((track.uniqueId in self.uidLastSeen) and self.uidLastSeen[track.uniqueId] < (time.time() + waitTime))):
-            self.uidLastSeen[track.uniqueId] = track.timestamp
+        self.uids.add(track.uniqueId)
 
         if isinstance(track.altitude, int):
             self.avgAltitude = (track.altitude / 2) + (self.avgAltitude / 2)
@@ -61,9 +58,7 @@ class TrackStats():
     def getStats(self):
         """ #### TODO
         """
-        print("UniqueIds:")
-        json.dump(self.uidLastSeen, sys.stdout, indent=4, sort_keys=True)
-        print("")
+        print(f"Number of UniqueIds: {len(self.uids)}")
 
         print(f"Altitude: min={self.minAltitude}, max={self.maxAltitude}, avg={self.avgAltitude:.2f}")
 
@@ -75,5 +70,4 @@ class TrackStats():
         print("")
 
     #### TODO make histogram of categories seen
-    #### TODO counts of unique Ids
 
