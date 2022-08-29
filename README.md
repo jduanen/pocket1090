@@ -30,8 +30,16 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 ## Handheld Device
 *TBD*
 
-### Handheld Device Example Display
-![Device Display 1](screen1.png)
+### Handheld Device Example Displays
+
+#### Summary Mode
+![Device Summary Display](screen_summary.png)
+
+#### Details Mode
+![Device Details Display](screen_details.png)
+
+#### Info Mode
+![Device Info Display](screen_info.png)
 
 ## Interacting with the Application
 * Command-line Arguments
@@ -109,7 +117,7 @@ EndSection
 * RasPi didn't handle I2C clock-stretching properly
   - seems to work fine with PiZero V2
 * install Adafruit BNO055 library from PyPi
-  - sudo pip3 install adafruit-bno055
+  - 'sudo pip3 install adafruit-bno055'
 
 ### dump1090-fa
 * set up environment
@@ -127,7 +135,7 @@ EndSection
 
 ### pocket1090
 * install pocket1090 repo
-  - 'git clone ?'
+  - 'git clone https://github.com/jduanen/pocket1090.git'
 * set up environment
   - 'sudo apt install libsdl2-ttf-2*'
   - 'pip3 install -r requirements.txt'
