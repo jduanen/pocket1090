@@ -55,6 +55,11 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
   - Down Arrow: decrease the max distance to the next power of two Km
   - 'a': auto-range -- enable auto-range mode
   - 'm': manual range -- disable auto-range mode
+  - 'd': detail mode
+  - 'i': info mode
+  - 's': summary mode
+  - 'p': print info
+  - 'r': reset info
   - 'q': quit -- exit the application
   - 'h': print the keyboard inputs
 
@@ -70,17 +75,12 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
       - RasPi: pygame 2.1.0 (SDL 2.0.14, python 3.9.2)
   - also install missing package:
     * 'sudo apt-get install libsdl2-image-2.0-0'
+* Update firmware with 'sudo rpi-update'
+  - to fix HDMI issue with 5.15.56+
+  - should be fixed in future releases
 
 ### 4" HDMI IPS LCD with Resistive Touch Screen
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-* edit /boot/config.txt and add to end of file:
-  - 'sudo cp /boot/config.txt /boot/config.txt.orig'
-  - 'sudo ex /boot/config.txt'
-hdmi_group=2
-hdmi_mode=87 
-hdmi_timings=480 0 40 10 80 800 0 13 3 32 0 0 0 60 0 32000000 dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
-hdmi_drive=1
-hdmi_force_hotplug=1
 * setup xinput-calibrator
   - 'sudo apt-get install xserver-xorg-input-evdev xinput-calibrator'
   - 'sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf'
@@ -146,7 +146,7 @@ EndSection
 * run pocket1090 application
   - './pocket1090.sh start'
   - manual operation:
-    * '/opt/pocket1090/pocket1090.py -v /tmp -L INFO -f'
+    * '/opt/pocket1090/pocket1090.py -v /run/user/1000 -L INFO -f'
       - run in full-screen mode
 * pocket1090.sh
   - script to install, run, stop, get the status, and remove installation of pocket1090 application
@@ -485,3 +485,13 @@ EndSection
     if not bno.begin():
       print("ERROR: failed to init")
   - consider getting this: http://gps-pie.com/L80_slice.htm
+
+* Display
+  - edit /boot/config.txt and add to end of file:
+    * 'sudo cp /boot/config.txt /boot/config.txt.orig'
+    ** 'sudo ex /boot/config.txt'
+hdmi_group=2
+hdmi_mode=87
+hdmi_timings=480 0 40 10 80 800 0 13 3 32 0 0 0 60 0 32000000 dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
+hdmi_drive=1
+hdmi_force_hotplug=1
