@@ -29,18 +29,18 @@ LOG_LEVEL="-L INFO"
 
 LOG_FILE=
 
-JSON_FILE_PATH="/tmp/"
-
 DISTRO=$(cat /etc/*-release | grep -w NAME | cut -d= -f2 | tr -d '"')
 
 if [ "${DISTRO}" == "Ubuntu" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE} -p ${LAT},${LON} -o 0.0,0.0,0.0"
     DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}dump1090"
+    JSON_FILE_PATH="/tmp/"
 elif [ "${DISTRO}" == "Raspbian GNU/Linux" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
     DUMP1090_PATH="${HOME}/Code/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}package-bullseye/dump1090"
+    JSON_FILE_PATH="/run/usr/1000/"
 fi
 
 export PYTHONPATH="${PYTHONPATH}:${INSTALL_PATH}"
