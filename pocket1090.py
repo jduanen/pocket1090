@@ -216,6 +216,7 @@ def getOps():
         opts.position = Point(float(position[0]), float(position[1]))
 
     if opts.verbose:
+        print(f"    Config File Path: {opts.configFile}")
         print(f"    JSON Files Path:  {opts.path}")
         print(f"    Asset Files Path: {opts.config['assetsPath']}")
         if opts.fullScreen:
