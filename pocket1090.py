@@ -201,17 +201,17 @@ def getOps():
     logging.basicConfig(filename=opts.config.get('logFile', None),
                         level=opts.config['level'])
 
-    if opts.orientation:
-        orientation = opts.orientation.split(",")
+    if opts.config['orientation']:
+        orientation = opts.config['orientation'].split(",")
         if len(orientation) != 3:
-            logging.error(f"Invalid orientation tuple: '{opts.orientation}'")
+            logging.error(f"Invalid orientation tuple: '{opts.config['orientation']}'")
             sys.exit(1)
         opts.orientation = (float(orientation[0]), float(orientation[1]), float(orientation[2]))
 
-    if opts.position:
-        position = opts.position.split(",")
+    if opts.config['position']:
+        position = opts.config['position'].split(",")
         if len(position) != 2:
-            logging.error(f"Invalid position tuple: '{opts.position}'")
+            logging.error(f"Invalid position tuple: '{opts.config['position']}'")
             sys.exit(1)
         opts.position = Point(float(position[0]), float(position[1]))
 
