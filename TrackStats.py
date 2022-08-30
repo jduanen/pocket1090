@@ -14,6 +14,11 @@ class TrackStats():
     """ #### TODO
     """
     def __init__(self):
+        self.resetStats()
+
+    def resetStats(self):
+        """ #### TODO
+        """
         self.uids = set([])
 
         self.maxAltitude = -1
@@ -65,7 +70,7 @@ class TrackStats():
             self.maxRSSI = track.rssi if track.rssi > self.maxRSSI else self.maxRSSI
             self.minRSSI = track.rssi if track.rssi < self.minRSSI else self.minRSSI
 
-    def getStats(self):
+    def printStats(self):
         """ #### TODO
         """
         print(f"Number of UniqueIds: {len(self.uids)}")

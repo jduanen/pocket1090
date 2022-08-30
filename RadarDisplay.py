@@ -704,6 +704,8 @@ class RadarDisplay():
                         self.infoMode = INFO_MODE
                     elif event.key in (K_s, ):
                         self.infoMode = SUMMARY_MODE
+                    elif event.key in (K_r, ):
+                        self.stats.resetStats()
                     elif event.key in (K_m, ):
                         self.autoRange = False
                     elif event.key in (K_h, ):
@@ -716,6 +718,10 @@ class RadarDisplay():
                         print("  Down Arrow: decrease the max distance to the next power of two Km")
                         print("  'a': auto-range -- enable auto-range mode")
                         print("  'm': manual range -- disable auto-range mode")
+                        print("  'i': info mode")
+                        print("  's': summary mode")
+                        print("  'd': detail mode")
+                        print("  'r': reset info")
                         print("  'q': quit -- exit the application")
                     elif event.key in (K_q, ):
                         self.running = False
