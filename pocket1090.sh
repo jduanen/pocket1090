@@ -38,7 +38,7 @@ if [ "${DISTRO}" == "Ubuntu" ]; then
     JSON_FILE_PATH="/tmp/"
 elif [ "${DISTRO}" == "Raspbian GNU/Linux" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
-    DUMP1090_PATH="${HOME}/Code/dump1090/"
+    DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}package-bullseye/dump1090"
     JSON_FILE_PATH="/run/usr/1000/"
 fi
