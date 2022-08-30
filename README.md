@@ -140,20 +140,12 @@ EndSection
   - 'sudo apt install libsdl2-ttf-2*'
   - 'pip3 install -r requirements.txt'
 * run pocket1090 application
-  - './pocket1090.py -v /tmp -L INFO -f'
-  - run in full-screen mode
-
-### pocket1090.sh
-* script to install, run, stop, get the status, and remove installation of pocket1090 application
-
-### Screenshots
-![Desktop Display 1](screen5.png)
-
-![Desktop Display 2](screen2.png)
-
-![Desktop Display 3](screen3.png)
-
-![Desktop Display 4](screen4.png)
+  - './pocket1090.sh start'
+  - manual operation:
+    * '/opt/pocket1090/pocket1090.py -v /tmp -L INFO -f'
+      - run in full-screen mode
+* pocket1090.sh
+  - script to install, run, stop, get the status, and remove installation of pocket1090 application
 
 ## HW
 
