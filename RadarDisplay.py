@@ -551,6 +551,7 @@ class RadarDisplay():
         """Render the screen with the given orientation and location
           #### TODO
         """
+        #### FIXME allow the Mode displays to work even when there's no tracks
         if len(tracks) < 1:
             self._initScreen(orientation[0])  #### TODO figure out if I need this here
             text = None
@@ -679,34 +680,49 @@ class RadarDisplay():
             for event in events:
                 if event.type == pygame.QUIT:
                     self.running = False
+                dirty = False
                 if event.type == KEYDOWN:
                     if event.key == K_LEFT:
+                        dirty = True
                         self.trails -= 1
                     elif event.key == K_RIGHT:
+                        dirty = True
                         self.trails += 1
                     elif event.key == K_HOME:
+                        dirty = True
                         self.trails = 0
                     elif event.key == K_END:
+                        dirty = True
                         self.trails = -1
                     elif event.key == K_UP:
+                        dirty = True
                         self.rangeUp()
                     elif event.key == K_DOWN:
+                        dirty = True
                         self.rangeDown()
                     elif event.key == K_LCTRL:
                         print("L-CTRL")
                     elif event.key == K_BACKSPACE:
+                        dirty = True
                         self.trailsNone()
                     elif event.key in (K_a, ):
+                        dirty = True
                         self.autoRange = True
                     elif event.key in (K_d, ):
+                        dirty = True
                         self.infoMode = DETAILS_MODE
                     elif event.key in (K_i, ):
+                        dirty = True
                         self.infoMode = INFO_MODE
                     elif event.key in (K_s, ):
+                        dirty = True
                         self.infoMode = SUMMARY_MODE
+                    elif event.key in (K_p, ):
+                        self.stats.printStats()
                     elif event.key in (K_r, ):
                         self.stats.resetStats()
                     elif event.key in (K_m, ):
+                        dirty = True
                         self.autoRange = False
                     elif event.key in (K_h, ):
                         print("Keyboard Inputs:")
@@ -721,10 +737,13 @@ class RadarDisplay():
                         print("  'i': info mode")
                         print("  's': summary mode")
                         print("  'd': detail mode")
+                        print("  'p': print info")
                         print("  'r': reset info")
                         print("  'q': quit -- exit the application")
                     elif event.key in (K_q, ):
                         self.running = False
+                if dirty:
+                    self._setButtons()
                 if event.type == KEYUP:
                     if event.key == K_LEFT:
                         pass
