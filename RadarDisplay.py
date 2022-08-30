@@ -636,10 +636,9 @@ class RadarDisplay():
                     self.screen.blit(text, textRect)
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
-                        print("XXXX")
+                        logging.warning("Window overrun")
                         break
         elif self.infoMode == INFO_MODE:
-            ##self.stats.getStats()
             lines = [
                 f"Start Time:      {self.startTime} UTC",
                 f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
