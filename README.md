@@ -72,6 +72,7 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
     * 'sudo apt-get install libsdl2-image-2.0-0'
 
 ### 4" HDMI IPS LCD with Resistive Touch Screen
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 * edit /boot/config.txt and add to end of file:
   - 'sudo cp /boot/config.txt /boot/config.txt.orig'
   - 'sudo ex /boot/config.txt'
@@ -119,7 +120,7 @@ EndSection
 ### dump1090-fa
 * set up environment
   - 'sudo apt-get install build-essential fakeroot debhelper librtlsdr-dev pkg-config libncurses5-dev libbladerf-dev libhackrf-dev liblimesuite-dev'
-* clone dump1090-fa
+* clone dump1090-fa into ~/Code2/
   - 'git clone git@github.com:flightaware/dump1090.git'
 * patch dump1090-fa to not write history files
   - e.g., as defined in dump1090.patch
@@ -127,15 +128,21 @@ EndSection
   - './prepare-build.sh bullseye'
   - 'cd package-bullseye'
   - 'dpkg-buildpackage -b --no-sign'
-* run dump1090-fa
-  - '/home/jdn/Code2/dump1090/dump1090 --write-json /tmp/ > /tmp/fa.txt
+* run dump1090 from pocket1090.sh
+  - manual execution:
+    * desktop:
+      - '/home/jdn/Code2/dump1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /tmp/
+    * raspbian bullseye:
+      - '/home/jdn/Code2/dump1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
 
 ### pocket1090
-* install pocket1090 repo
+* clone pocket1090 into ~/Code
   - 'git clone https://github.com/jduanen/pocket1090.git'
 * set up environment
   - 'sudo apt install libsdl2-ttf-2*'
   - 'pip3 install -r requirements.txt'
+* install the pocket1090 application and supporting files (in /opt/pocket1090)
+  - './pocket1090.sh install'
 * run pocket1090 application
   - './pocket1090.sh start'
   - manual operation:
