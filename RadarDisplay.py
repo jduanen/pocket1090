@@ -553,8 +553,8 @@ class RadarDisplay():
         """
         #### FIXME allow the Mode displays to work even when there's no tracks
         if len(tracks) < 1:
-            self._initScreen(orientation[0])  #### TODO figure out if I need this here
-            text = None
+            sortedTracks = []
+            maxDist = DEF_MAX_DISTANCE
         else:
             sortedTracks = sorted(tracks.values(), key=lambda t: t.distance, reverse=self.farthest)
             if self.autoRange:
@@ -563,107 +563,108 @@ class RadarDisplay():
                 logging.info(f"Max Track (Ring) Distance: {maxDist:.2f} ({self.maxDistance}) Km")
                 with self.lock:
                     self._setMaxDistance(maxDist)
-            self._initScreen(orientation[0])
 
+        self._initScreen(orientation[0])
+
+        if self.verbose >= 2:
+            print("flight      alt.  speed   dir.  dist.   azi.  cat.")
+            print("--------  ------  -----  -----  -----  -----  ----")
+        table = []
+        self.trackPositions = []
+        for track in sortedTracks:
+            alt = track.altitude if isinstance(track.altitude, int) else " "
+            speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
+            heading = round(track.heading, 1) if isinstance(track.heading, float) else " "
+            table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category, track.rssi])
             if self.verbose >= 2:
-                print("flight      alt.  speed   dir.  dist.   azi.  cat.")
-                print("--------  ------  -----  -----  -----  -----  ----")
-            table = []
-            self.trackPositions = []
-            for track in sortedTracks:
-                alt = track.altitude if isinstance(track.altitude, int) else " "
-                speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
-                heading = round(track.heading, 1) if isinstance(track.heading, float) else " "
-                table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category, track.rssi])
-                if self.verbose >= 2:
-                    alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
-                    speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
-                    heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
-                    print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
-                if self.verbose >= 2:
-                    print(track)
-                #### TODO implement per-track trails, for now do them all the same
-                pos = self._renderSymbol(track, selfLocation, self.trails)
-                self.trackPositions.append((pos, track))
-                self.stats.update(track)
+                alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
+                speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
+                heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
+                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
             if self.verbose >= 2:
-                print("")
-            y = self.diameter + self.buttonHeight + 4
-            self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
-            if self.infoMode == SUMMARY_MODE:
-                columns = ["Flight", "Feet", "Knots", "Head.", "Dist.", "Azi.", "Cat.", "RSSI"]
-                t = tabulate(table, headers=columns)
-                for line in t.split('\n'):
-                    text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
-                    textRect = text.get_rect()
-                    textRect.topleft = (4, y)
-                    self.screen.blit(text, textRect)
-                    y += textRect.h + 2
-                    if y >= self.windowSize[1]:
-                        break
-            elif self.infoMode == DETAILS_MODE:
-                #### FIXME test if track is gone
-                #if self.selectedTrack not in ?:
-                #    self.selectedTrack = None
-                if self.selectedTrack:
-                    trk = self.selectedTrack
-                    alt = f"{trk.altitude: >6}" if isinstance(trk.altitude, int) else "      "
-                    speed = f"{trk.speed:5.1f}" if isinstance(trk.speed, float) else "     "
-                    heading = f"{trk.heading:5.1f}" if isinstance(trk.heading, float) else "     "
-                    lines = [
-                        f"UniqueId:       {trk.uniqueId}",
-                        f"Flight Number:  {trk.flightNumber}",
-                        f"Baro Altitude:  {trk.altitude} FASL",
-                        f"Ground Speed:   {trk.speed} knots",
-                        f"Track Heading:  {trk.heading} deg",
-                        f"Category:       {trk.category}",
-                        f"Latitude:       {trk.lat}",
-                        f"Longitude:      {trk.lon}",
-                        f"Distance to:    {trk.distance:.3f} Km",
-                        f"Azimuth to:     {trk.azimuth:.1f} deg",
-                        f"Last Seen:      {trk.seen} secs",
-                        f"Last Position:  {trk.seenPos} secs",
-                        f"RSSI:           {trk.rssi} dBFS",
-                        f"Timestamp:      {datetime.fromtimestamp(trk.timestamp).isoformat()} {self.tz}",
-                        f"Location:       {trk.location}"
-                    ]
-                    y += 8
-                    for line in lines:
-                        text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
-                        textRect = text.get_rect()
-                        textRect.topleft = (12, y)
-                        self.screen.blit(text, textRect)
-                        y += textRect.h + 2
-                        if y >= self.windowSize[1]:
-                            print("XXXX")
-                            break
-            elif self.infoMode == INFO_MODE:
-                ##self.stats.getStats()
+                print(track)
+            #### TODO implement per-track trails, for now do them all the same
+            pos = self._renderSymbol(track, selfLocation, self.trails)
+            self.trackPositions.append((pos, track))
+            self.stats.update(track)
+        if self.verbose >= 2:
+            print("")
+        y = self.diameter + self.buttonHeight + 4
+        self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
+        if self.infoMode == SUMMARY_MODE:
+            columns = ["Flight", "Feet", "Knots", "Head.", "Dist.", "Azi.", "Cat.", "RSSI"]
+            t = tabulate(table, headers=columns)
+            for line in t.split('\n'):
+                text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
+                textRect = text.get_rect()
+                textRect.topleft = (4, y)
+                self.screen.blit(text, textRect)
+                y += textRect.h + 2
+                if y >= self.windowSize[1]:
+                    break
+        elif self.infoMode == DETAILS_MODE:
+            #### FIXME test if track is gone
+            #if self.selectedTrack not in ?:
+            #    self.selectedTrack = None
+            if self.selectedTrack:
+                trk = self.selectedTrack
+                alt = f"{trk.altitude: >6}" if isinstance(trk.altitude, int) else "      "
+                speed = f"{trk.speed:5.1f}" if isinstance(trk.speed, float) else "     "
+                heading = f"{trk.heading:5.1f}" if isinstance(trk.heading, float) else "     "
                 lines = [
-                    f"Start Time:      {self.startTime} UTC",
-                    f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
-                    f"Location:        {selfLocation}",
-                    f"Time:            {currentTime} UTC",
-                    f"CPU Temperature: {cpuTemp()} C",
-                    f"Number of Uids:  {len(self.stats.uids)}",
-                    f"Altitude Stats:  min={self.stats.minAltitude}, max={self.stats.maxAltitude}, avg={self.stats.avgAltitude:.2f}",
-                    f"Speed Stats:     min={self.stats.minSpeed}, max={self.stats.maxSpeed}, avg={self.stats.avgSpeed:.2f}",
-                    f"Distance Stats:  min={self.stats.minDistance:.2f}, max={self.stats.maxDistance:.2f}, avg={self.stats.avgDistance:.2f}",
-                    f"RSSI Stats:      min={self.stats.minRSSI}, max={self.stats.maxRSSI}, avg={self.stats.avgRSSI:.2f}"
-                    #### TODO add category histogram
+                    f"UniqueId:       {trk.uniqueId}",
+                    f"Flight Number:  {trk.flightNumber}",
+                    f"Baro Altitude:  {trk.altitude} FASL",
+                    f"Ground Speed:   {trk.speed} knots",
+                    f"Track Heading:  {trk.heading} deg",
+                    f"Category:       {trk.category}",
+                    f"Latitude:       {trk.lat}",
+                    f"Longitude:      {trk.lon}",
+                    f"Distance to:    {trk.distance:.3f} Km",
+                    f"Azimuth to:     {trk.azimuth:.1f} deg",
+                    f"Last Seen:      {trk.seen} secs",
+                    f"Last Position:  {trk.seenPos} secs",
+                    f"RSSI:           {trk.rssi} dBFS",
+                    f"Timestamp:      {datetime.fromtimestamp(trk.timestamp).isoformat()} {self.tz}",
+                    f"Location:       {trk.location}"
                 ]
                 y += 8
                 for line in lines:
                     text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
                     textRect = text.get_rect()
-                    textRect.topleft = (22, y)
+                    textRect.topleft = (12, y)
                     self.screen.blit(text, textRect)
                     y += textRect.h + 2
                     if y >= self.windowSize[1]:
+                        print("XXXX")
                         break
-            text = self.summaryFont.render(f"{len(table)}", True, self.summaryFontColor, self.bgColor)
-            textRect = text.get_rect()
-            textRect.bottomleft = (2, (self.diameter - 2))
+        elif self.infoMode == INFO_MODE:
+            ##self.stats.getStats()
+            lines = [
+                f"Start Time:      {self.startTime} UTC",
+                f"Orientation:     heading = {orientation[0]}, roll = {orientation[1]}, pitch = {orientation[2]}",
+                f"Location:        {selfLocation}",
+                f"Time:            {currentTime} UTC",
+                f"CPU Temperature: {cpuTemp()} C",
+                f"Number of Uids:  {len(self.stats.uids)}",
+                f"Altitude Stats:  min={self.stats.minAltitude}, max={self.stats.maxAltitude}, avg={self.stats.avgAltitude:.2f}",
+                f"Speed Stats:     min={self.stats.minSpeed}, max={self.stats.maxSpeed}, avg={self.stats.avgSpeed:.2f}",
+                f"Distance Stats:  min={self.stats.minDistance:.2f}, max={self.stats.maxDistance:.2f}, avg={self.stats.avgDistance:.2f}",
+                f"RSSI Stats:      min={self.stats.minRSSI}, max={self.stats.maxRSSI}, avg={self.stats.avgRSSI:.2f}"
+                #### TODO add category histogram
+            ]
+            y += 8
+            for line in lines:
+                text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
+                textRect = text.get_rect()
+                textRect.topleft = (22, y)
+                self.screen.blit(text, textRect)
+                y += textRect.h + 2
+                if y >= self.windowSize[1]:
+                    break
+        text = self.summaryFont.render(f"{len(table)}", True, self.summaryFontColor, self.bgColor)
+        textRect = text.get_rect()
+        textRect.bottomleft = (2, (self.diameter - 2))
         with self.lock:
             self.screen.blit(self.radarSurface, (0, 0))
             if text:
