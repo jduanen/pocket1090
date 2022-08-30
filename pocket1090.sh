@@ -71,8 +71,7 @@ install() {
 
 start() {
     echo "    Starting the dump1090 server in the background"
-    ${INSTALL_PATH}dump1090 --quiet --metric --write-json ${JSON_FILE_PATH} &
-
+    ${INSTALL_PATH}dump1090 --quiet --metric  --json-stats-every 0 --write-json ${JSON_FILE_PATH} &
     echo "     Starting the pocket1090 application in the background"
     ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} ${JSON_FILE_PATH} &
 }
