@@ -95,13 +95,11 @@ def run(options):
 
         #### TODO detect "interesting" cases (e.g., emergency, other than "A?") and save them
         emergencies = {k: v for k, v in aircraftInfo.items() if v.get('emergency', "none") != "none"}
-        if emergencies:
-            #### TODO log these to a file
-            print(f"\a\nEmergencies: {emergencies}\n\a")
+        if emergencies and options.exceptFd:
+            options.exceptFd.write(f"\a\nEmergencies: {emergencies}\n\a")
         oddVehicles = {k: v for k, v in aircraftInfo.items() if not v.get('category', "A").startswith("A")}
         if oddVehicles:
-            #### TODO log these to a file
-            print(f"\a\nUnusual Vehicles: {oddVehicles}\n\a")
+            options.exceptFd.write(f"\a\nUnusual Vehicles: {oddVehicles}\n\a")
 
         if options.orientation is None:
             heading, roll, pitch = compass.getEulerAngles()
@@ -134,11 +132,15 @@ def run(options):
 
 def getOps():
     usage = f"Usage: {sys.argv[0]} [-c <configFile>] [-f] [-L <logLevel>]"
-    usage += " [-l <logFile>] [-o <heading>,<roll>,<pitch>] [-p <lat>,<lon>] [-v] <path>"
+    usage += " [-l <logFile>] [-o <heading>,<roll>,<pitch>] [-p <lat>,<lon>]"
+    usage += " [-e <path>] [-v] <path>"
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-c", "--configFile", action="store", type=str, default=DEF_CONFIG_FILE,
         help="Path to file with configuration information; will be created if doesn't exist")
+    ap.add_argument(
+        "-e", "--exceptsFile", action="store", type=str,
+        help="Path to file where exceptional track information is to be stored ('-' means stdout)")
     ap.add_argument(
         "-f", "--fullScreen", action="store_true", default=False,
         help="Execute in full screen mode")
@@ -201,6 +203,13 @@ def getOps():
     logging.basicConfig(filename=opts.config.get('logFile', None),
                         level=opts.config['level'])
 
+    opts.exceptFd = None
+    if opts.config['exceptsFile']:
+        if opts.config['exceptsFile'] == "-":
+            opts.exceptFd = sys.stdout
+        else:
+            opts.exceptFd = open(opts.config['exceptsFile'], "w+")
+
     if opts.config['orientation']:
         orientation = opts.config['orientation'].split(",")
         if len(orientation) != 3:
@@ -216,18 +225,20 @@ def getOps():
         opts.position = Point(float(position[0]), float(position[1]))
 
     if opts.verbose:
-        print(f"    Config File Path: {opts.configFile}")
-        print(f"    JSON Files Path:  {opts.path}")
-        print(f"    Asset Files Path: {opts.config['assetsPath']}")
+        print(f"    Config File Path:   {opts.configFile}")
+        print(f"    JSON Files Path:    {opts.path}")
+        if opts.exceptFd:
+            print(f"    Excepts Track file: {opts.exceptFd}")
+        print(f"    Asset Files Path:   {opts.config['assetsPath']}")
         if opts.fullScreen:
             print(f"    Enable Full Screen Mode")
-        print(f"    Log level:        {opts.config['logLevel']}")
+        print(f"    Log level:          {opts.config['logLevel']}")
         if opts.config['logFile']:
-            print(f"    Logging to:       {opts.config['logFile']}")
+            print(f"    Logging to:         {opts.config['logFile']}")
         else:
             print(f"    Logging to stdout")
         if opts.position:
-            print(f"    Fixed Position:   {opts.position}")
+            print(f"    Fixed Position:     {opts.position}")
         else:
             print(f"    Using GPS for Time and Position")
 
