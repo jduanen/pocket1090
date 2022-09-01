@@ -107,6 +107,14 @@ EndSection
   - 'sudo reboot'
 * variation of: https://www.waveshare.com/wiki/4inch_HDMI_LCD
 
+### RTL_SDR Receiver
+* set permissions
+  - 'lsusb' to get vendor Id and product Id
+    * e.g., Bus 001 Device 005: ID 0bda:2832 Realtek Semiconductor Corp. RTL2832U DVB-T
+  - create file '/etc/udev/rules.d/20.rtlsdr.rules'
+    * add this content:
+      - 'SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832", GROUP="adm", MODE="0666", SYMLINK+="rtl_sdr"'
+
 ### GPS Receiver
 * Enable serial port without console
   - using 'sudo raspi-config'
