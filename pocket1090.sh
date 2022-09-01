@@ -63,7 +63,7 @@ install() {
 
     echo "    Copying files to ${INSTALL_PATH}"
     sudo cp ${DUMP1090_BIN} ${INSTALL_PATH}
-    sudo cp ${POCKET1090_PATH}*.py ${INSTALL_PATH}
+    sudo cp ${POCKET1090_PATH}*.{py,yml} ${INSTALL_PATH}
 
     echo "    Asset files to ${ASSETS_PATH}"
     sudo cp ${POCKET1090_PATH}assets/*.png "${ASSETS_PATH}"
