@@ -68,25 +68,33 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 ### Raspberry Pi Zero 2W
 * Set up for LCD Panel
   - install raspi os with 'rpi-imager'
-* Prepare SW Environment
+* Update OS: 'apt update; apt upgrade'
+* Update firmware with 'sudo rpi-update'
+  - to fix HDMI issue with 5.15.56+
+  - should be fixed in future releases
+* run 'raspi-config'
+  - enable SPI, I2C, and UART (no console)
+* Prepare SW Environment for the application
   - install 2.x pygame
     * 'pip3 install pygame==2.1'
       - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
       - RasPi: pygame 2.1.0 (SDL 2.0.14, python 3.9.2)
   - also install missing package:
     * 'sudo apt-get install libsdl2-image-2.0-0'
-* Update firmware with 'sudo rpi-update'
-  - to fix HDMI issue with 5.15.56+
-  - should be fixed in future releases
 
 ### 4" HDMI IPS LCD with Resistive Touch Screen
-vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-* setup xinput-calibrator
+* Display works out of the box after standard SW setup
+* Enable the touchpanel:
+  - raspi-config puts this into /boot/config.txt:
+    * dtparam=i2c_arm=on
+    * dtparam=spi=on
+    * dtoverlay=vc4-kms-v3d # I think this is there by default
+  - add this:
+    * dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
+* Calibrate the touchpanel:
   - 'sudo apt-get install xserver-xorg-input-evdev xinput-calibrator'
   - 'sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf'
-    * edit conf file:
-      - 'sudo ex /usr/share/X11/xorg.conf.d/99-calibration.conf'
-      - add to file:
+  - 'sudo ex /usr/share/X11/xorg.conf.d/99-calibration.conf'
 Section "InputClass"
         Identifier      "calibration"
         MatchProduct    "ADS7846 Touchscreen"
@@ -96,7 +104,8 @@ Section "InputClass"
         Option "EmulateThirdButtonTimeout" "1000"
         Option "EmulateThirdButtonMoveThreshold" "300"
 EndSection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  - 'sudo reboot'
+* variation of: https://www.waveshare.com/wiki/4inch_HDMI_LCD
 
 ### GPS Receiver
 * Enable serial port without console
@@ -495,3 +504,122 @@ hdmi_mode=87
 hdmi_timings=480 0 40 10 80 800 0 13 3 32 0 0 0 60 0 32000000 dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
 hdmi_drive=1
 hdmi_force_hotplug=1
+
+* Waveshare 4" LCD
+  - XPT2046
+  - TFP401
+  - ADS7864
+  - issues:
+    * Shutting off HDMI "flip_done timed out"
+      - https://github.com/raspberrypi/linux/issues/4962
+    * Issue with XPT2046/ADS7846 touchscreen on RPi3
+      - https://forums.raspberrypi.com/viewtopic.php?t=173993
+        * /boot/config.txt
+
+* What works:
+
+
+
+
+* Try:
+  - install stuff
+    * sudo apt-get update
+    * sudo apt-get install xserver-xorg-input-evdev xinput-calibrator libts-bin evtest xinput
+    * sudo pip install evdev
+
+
+
+  - /boot/config.txt
+    * dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900
+      or
+    * dtoverlay=ads7846,penirq=25,speed=10000,penirq_pull=2,xohms=150
+      or
+    * dtoverlay=ads7846,penirq=25,speed=10000,keep_vref_on=0,penirq_pull=2,xohms=150
+
+
+  - /etc/modules?
+    * ads7846_device model=7846 cs=1 gpio_pendown=25 speed=1000000 keep_vref_on=1 swap_xy=1 pressure_max=255 x_plate_ohms=150 x_min=184 x_max=3869 y_min=141 y_max=3959
+
+
+  - ?
+    * sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf
+
+
+----------------
+dtparam=i2c_arm=on
+dtparam=spi=on
+dtoverlay=ads7846,penirq=25,speed=10000,penirq_pull=2,xohms=150
+        * /etc/modules
+ads7846_device model=7846 cs=1 gpio_pendown=25 speed=1000000 keep_vref_on=1 swap_xy=1 pressure_max=255 x_plate_ohms=150 x_min=184 x_max=3869 y_min=141 y_max=3959
+----------------
+dtparam=spi=on
+dtparam=i2c_arm=on
+hdmi_group=2
+hdmi_mode=1
+hdmi_mode=87
+hdmi_cvt 480 800 60 6 0 0 0
+display_rotate=3
+dtoverlay=ads7846,penirq=25,speed=10000,keep_vref_on=0,penirq_pull=2,xohms=150
+----------------
+
+        * /etc/X11/xorg.conf.d/99-calibration.conf
+----------------
+Section "InputClass"
+        Identifier      "calibration"
+        MatchProduct    "ADS7846 Touchscreen"
+        Option  "MinX"  "2778"
+        Option  "MaxX"  "63781"
+        Option  "MinY"  "3254"
+        Option  "MaxY"  "62964"
+        Option  "SwapXY"        "0" # unless it was already set to 1
+        Option  "InvertX"       "0"  # unless it was already set
+        Option  "InvertY"       "0"  # unless it was already set
+EndSection
+----------------
+Section "InputClass"
+        Identifier "calibration"
+        MatchProduct "ADS7846 Touchscreen"
+        Option "Calibration" "3853 170 288 3796"
+        Option "SwapAxes" "1"
+EndSection
+----------------
+        * install evtest and run 'sudo evtest' to touch log for corner points
+sudo apt-get update
+sudo apt-get install -y libts-bin evtest xinput python-dev python-pip
+sudo pip install evdev
+sudo apt-get install -y xinput-calibrator
+
+        * install keyboard
+          - 'sudo apt-get install -y xvkbd'
+        * 'xinput list'
+        * 'xinput list-props 6'
+        * view logs written at boot-up: 'cat /var/log/Xorg.0.log'
+        * 'sudo ex /usr/share/X11/xorg.conf.d/45-evdev.conf'
+
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+* setup xinput-calibrator
+  - 'sudo apt-get install xserver-xorg-input-evdev xinput-calibrator'
+  - 'sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf'
+    * edit conf file:
+      - 'sudo ex /usr/share/X11/xorg.conf.d/99-calibration.conf'
+      - add to file:
+Section "InputClass"
+        Identifier      "calibration"
+        MatchProduct    "ADS7846 Touchscreen"
+        Option  "Calibration"   "208 3905 288 3910"
+        Option  "SwapAxes"      "0"
+        Option "EmulateThirdButton" "1"
+        Option "EmulateThirdButtonTimeout" "1000"
+        Option "EmulateThirdButtonMoveThreshold" "300"
+EndSection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    
+sudo apt-get install xserver-xorg-input-evdev
+sudo cp -rf /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf
+sudo reboot 
+
+* LCD35-show
+git clone https://github.com/goodtft/LCD-show.git
+chmod -R 755 LCD-show
+cd LCD-show/
+sudo ./LCD35-show 
+
