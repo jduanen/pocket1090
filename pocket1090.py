@@ -185,6 +185,10 @@ def getOps():
         config['logLevel'] = opts.logLevel
     if opts.logFile:
         config['logFile'] = opts.logFile
+    if opts.orientation:
+        config['orientation'] = opts.orientation
+    if opts.position:
+        config['position'] = opts.position
     dictMerge(opts.config, config)
     if opts.verbose:
         print("CONFIG:")
