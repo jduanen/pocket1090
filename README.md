@@ -156,7 +156,7 @@ EndSection
 * clone pocket1090 into ~/Code
   - 'git clone https://github.com/jduanen/pocket1090.git'
 * set up environment
-  - 'sudo apt install libsdl2-ttf-2*'
+  - 'sudo apt install libsdl-gfx1.2-5 libsdl-image1.2 libsdl-kitchensink1 libsdl-mixer1.2 libsdl-sound1.2 libsdl-ttf2.0-0 libsdl1.2debian libsdl2-2.0-0 libsdl2-gfx-1.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0'
   - 'pip3 install -r requirements.txt'
 * install the pocket1090 application and supporting files (in /opt/pocket1090)
   - './pocket1090.sh install'
