@@ -19,6 +19,12 @@ sudo apt upgrade
 # * Enable SPI, I2C, and UART (no console) interfaces 
 raspi-config
 
+# * Disable audio
+sudo ex /boot/config.txt
+#   - add ",noaudio" to the end of "dtoverlay=vc4-kms-v3d"
+#   - comment out "dtparam=audio=on"
+sudo apt-get purge pulseaudio
+
 
 # Set up for add-in HW
 # * 4" HDMI LCD with Resistive Touch Screen (Waveshare)
