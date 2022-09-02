@@ -171,7 +171,8 @@ def getOps():
                 print(f"Creating config file: '{opts.configFile}'")
 
     with open(opts.configFile, "r") as configFile:
-        config = list(yaml.load_all(configFile, Loader=yaml.Loader))[0]
+        c = list(yaml.load_all(configFile, Loader=yaml.Loader))[0]
+        config = [] if c is None else c
     if opts.verbose > 1:
         print("Config file contents:")
         json.dump(config, sys.stdout, indent=4, sort_keys=True)
