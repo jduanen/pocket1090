@@ -216,7 +216,7 @@ def getOps():
     else:
         opts.config = None
 
-    if opts.config['orientation']:
+    if opts.config.get('orientation', None):
         orientation = opts.config['orientation'].split(",")
         if len(orientation) != 3:
             logging.error(f"Invalid orientation tuple: '{opts.config['orientation']}'")
@@ -225,7 +225,7 @@ def getOps():
     else:
         opts.orientation = None
 
-    if opts.config['position']:
+    if opts.config.get('position', None):
         position = opts.config['position'].split(",")
         if len(position) != 2:
             logging.error(f"Invalid position tuple: '{opts.config['position']}'")
@@ -236,7 +236,7 @@ def getOps():
         print(f"    Config File Path:   {opts.configFile}")
         print(f"    JSON Files Path:    {opts.path}")
         if opts.exceptFd:
-            print(f"    Excepts Track file: {opts.exceptFd}")
+            print(f"    Excepts Track file: {opts.exceptFd.name}")
         print(f"    Asset Files Path:   {opts.config['assetsPath']}")
         if opts.fullScreen:
             print(f"    Enable Full Screen Mode")
