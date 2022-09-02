@@ -25,7 +25,7 @@ POCKET1090_PATH="${HOME}/Code/pocket1090/"
 
 VERBOSE=
 
-LOG_LEVEL="-L INFO"
+LOG_LEVEL=
 
 LOG_FILE=
 
@@ -36,11 +36,13 @@ if [ "${DISTRO}" == "Ubuntu" ]; then
     DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}dump1090"
     JSON_FILE_PATH="/tmp"
+    CONFIG_FILE="${HOME}/Code/pocket1090/pocket1090_dt.yml"
 elif [ "${DISTRO}" == "Raspbian GNU/Linux" ]; then
     OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
     DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}package-bullseye/dump1090"
     JSON_FILE_PATH="/run/user/1000"
+    CONFIG_FILE="${HOME}/Code/pocket1090/pocket1090_rpi.yml"
 fi
 
 export PYTHONPATH="${PYTHONPATH}:${INSTALL_PATH}"
@@ -69,19 +71,38 @@ install() {
     sudo cp ${POCKET1090_PATH}assets/*.png "${ASSETS_PATH}"
 }
 
+start_dump() {
+    ${INSTALL_PATH}dump1090 --quiet --metric  --json-stats-every 0 --write-json ${JSON_FILE_PATH} &
+}
+
+start_pocket() {
+    ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} -c ${CONFIG_FILE} ${JSON_FILE_PATH} &
+}
+
 start() {
     echo "    Starting the dump1090 server in the background"
-    ${INSTALL_PATH}dump1090 --quiet --metric  --json-stats-every 0 --write-json ${JSON_FILE_PATH} &
+    start_dump
+
     echo "     Starting the pocket1090 application in the background"
-    ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} ${JSON_FILE_PATH} &
+    start_pocket
+}
+
+kill_pocket() {
+    for KILLPID in `ps -ef | awk '$9~/^.*pocket1090.py$/ {print $2}'`; do kill $KILLPID; done
+}
+
+kill_dump() {
+    for KILLPID in `ps -ef | awk '$8~/^.*dump1090$/ {print $2}'`; do kill $KILLPID; done
 }
 
 stop() {
-    for KILLPID in `ps -ef | awk '$9~/^.*pocket1090.py$/ {print $2}'`; do kill $KILLPID; done
+    echo "    Stopping the pocket1090.py application"
+    kill_pocket
 
     echo "    Stopping the dump1090 server"
-    for KILLPID in `ps -ef | awk '$8~/^.*dump1090$/ {print $2}'`; do kill $KILLPID; done
+    kill_dump
     sleep 3
+
     status
 }
 
@@ -125,6 +146,18 @@ elif [ "${CMD}" == "status" ]; then
     echo "  Getting status of pocket1090"
     status
     exit $?
+elif [ "${CMD}" == "start_pocket" ]; then
+    echo "  Starting the pocket1090.py application"
+    start_pocket
+elif [ "${CMD}" == "start_dump" ]; then
+    echo "  Starting the dump1090 application"
+    start_dump
+elif [ "${CMD}" == "kill_pocket" ]; then
+    echo "  Killing the pocket1090.py application"
+    kill_pocket
+elif [ "${CMD}" == "kill_dump" ]; then
+    echo "  Killing the dump1090 application"
+    kill_dump
 elif [ "${CMD}" == "clean" ]; then
     echo "  Removing the installed pocket1090 files/directories"
     clean
