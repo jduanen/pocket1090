@@ -1,0 +1,14 @@
+[Unit]
+Description=pocket1090 ADS-B Service
+After=dump1090.service
+ConditionalPathExists=!/opt/pocket1090/pocket1090_not_to_be_run
+
+[Service]
+Type=? # 'idle' or 'notify'
+Restart=? # 'on-failure' or 'always'
+RestartSec=3
+User=jdn
+ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000
+
+[Install]
+WantedBy=pocket1090.service
