@@ -72,15 +72,13 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 * Update firmware with 'sudo rpi-update'
   - to fix HDMI issue with 5.15.56+
   - should be fixed in future releases
+* disable audio
+  - edit /boot/config.txt
+    * add ",noaudio" to the end of "dtoverlay=vc4-kms-v3d"
+    * comment out "dtparam=audio=on"
+  - apt-get purge pulseaudio
 * run 'raspi-config'
   - enable SPI, I2C, and UART (no console)
-* Prepare SW Environment for the application
-  - install 2.x pygame
-    * 'pip3 install pygame==2.1'
-      - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
-      - RasPi: pygame 2.1.0 (SDL 2.0.14, python 3.9.2)
-  - also install missing package:
-    * 'sudo apt-get install libsdl2-image-2.0-0'
 
 ### 4" HDMI IPS LCD with Resistive Touch Screen
 * Display works out of the box after standard SW setup
@@ -150,13 +148,19 @@ EndSection
     * desktop:
       - '/home/jdn/Code2/dump1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /tmp/
     * raspbian bullseye:
-      - '/home/jdn/Code2/dump1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
+      - '/opt/pocket1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
 
 ### pocket1090
 * clone pocket1090 into ~/Code
   - 'git clone https://github.com/jduanen/pocket1090.git'
-* set up environment
-  - 'sudo apt install libsdl-gfx1.2-5 libsdl-image1.2 libsdl-kitchensink1 libsdl-mixer1.2 libsdl-sound1.2 libsdl-ttf2.0-0 libsdl1.2debian libsdl2-2.0-0 libsdl2-gfx-1.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0'
+* Prepare SW Environment for the application
+  - install 2.x pygame
+    * 'pip3 install pygame==2.1'
+      - Ubuntu: pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+      - RasPi: pygame 2.1.0 (SDL 2.0.14, python 3.9.2)
+  - also install missing package:
+    * 'sudo apt-get install libsdl2-image-2.0-0'
+    * 'sudo apt install libsdl-gfx1.2-5 libsdl-image1.2 libsdl-kitchensink1 libsdl-mixer1.2 libsdl-sound1.2 libsdl-ttf2.0-0 libsdl1.2debian libsdl2-2.0-0 libsdl2-gfx-1.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0'
   - 'pip3 install -r requirements.txt'
 * install the pocket1090 application and supporting files (in /opt/pocket1090)
   - './pocket1090.sh install'
@@ -167,6 +171,17 @@ EndSection
       - run in full-screen mode
 * pocket1090.sh
   - script to install, run, stop, get the status, and remove installation of pocket1090 application
+
+### systemd
+* install 'dump1090.service' and 'pocket1090.service' in '/lib/systemd/system'
+  - change permissions: 'sudo chmod 644 /lib/systemd/system/{dump,pocket}1090.service'
+* configure systemd
+  - sudo systemctl daemon-reload
+  - sudo systemctl start dump1090.service
+  - sudo systemctl enable dump1090.service
+  - sudo systemctl start pocket1090.service
+  - sudo systemctl enable pocket1090.service
+  - sudo reboot
 
 ## HW
 
@@ -202,7 +217,7 @@ EndSection
     * 23: SCLK (TP SCLK)       24: CE0 (TP CS)
     * 25: GND                  26: CE1
 
-### RTLSDI USB Dongle
+### RTLSDR USB Dongle
 * FlightAware Pro-Stick Plus: https://flightaware.store/products/pro-stick-plus
   - built-in 1090MHz bandpass filter
   - SMA F connector
