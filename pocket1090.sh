@@ -86,17 +86,25 @@ stop() {
 }
 
 status() {
+    n=0
     DUMP_PIDS=`ps -ef | awk '$8~/^.*dump1090$/ {print $2}'`
     if [ $? == 0 ] && [ "$DUMP_PIDS" != "" ]; then
         echo "    dump1090 Server Running:" $DUMP_PIDS
+        ((n+=1))
     else
         echo "    dump1090 Server Not Running"
     fi
     POCK_PIDS=`ps -ef | awk '$9~/^.*pocket1090.py$/ {print $2}'`
     if [ $? == 0 ] && [ "$POCK_PIDS" != "" ]; then
         echo "    pocket1090 Application Running:" $POCK_PIDS
+        ((n+=1))
     else
         echo "    pocket1090 Application Not Running"
+    fi
+    if [[ $n -eq 2 ]]; then
+        return 0
+    else
+        return 1
     fi
 }
 
@@ -116,6 +124,7 @@ elif [ "${CMD}" == "stop" ]; then
 elif [ "${CMD}" == "status" ]; then
     echo "  Getting status of pocket1090"
     status
+    exit $?
 elif [ "${CMD}" == "clean" ]; then
     echo "  Removing the installed pocket1090 files/directories"
     clean
