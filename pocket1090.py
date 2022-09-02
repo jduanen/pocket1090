@@ -213,6 +213,8 @@ def getOps():
             opts.exceptFd = sys.stdout
         else:
             opts.exceptFd = open(opts.config['exceptsFile'], "w+")
+    else:
+        opts.config = None
 
     if opts.config['orientation']:
         orientation = opts.config['orientation'].split(",")
@@ -220,6 +222,8 @@ def getOps():
             logging.error(f"Invalid orientation tuple: '{opts.config['orientation']}'")
             sys.exit(1)
         opts.orientation = (float(orientation[0]), float(orientation[1]), float(orientation[2]))
+    else:
+        opts.orientation = None
 
     if opts.config['position']:
         position = opts.config['position'].split(",")
