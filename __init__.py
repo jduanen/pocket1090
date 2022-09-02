@@ -55,6 +55,10 @@ def dictDiff(newDict, oldDict):
 def dictMerge(old, new):
     ''' Merge a new dict into an old one, updating the old one (recursively).
     '''
+    if not new:
+        return
+    if not old:
+        raise Exception("Must provide old dict")
     for k, _ in new.items():
         if (k in old and isinstance(old[k], dict) and
                 isinstance(new[k], collections.Mapping)):
