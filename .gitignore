@@ -128,3 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+
+# added by JDN
+pocket1090_dt.yml
+pocket1090_rpi.yml
