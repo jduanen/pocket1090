@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=exec
-Restart='always'
+Restart=always
 RestartSec=10s
 ExecStart=/opt/pocket1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
 User=jdn
