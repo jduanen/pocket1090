@@ -1,6 +1,5 @@
 [Unit]
 Description=dump1090 RTL-SDR ADS-B Service
-After=multi-user.target
 
 [Service]
 Type=exec
