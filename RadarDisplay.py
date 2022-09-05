@@ -99,7 +99,7 @@ class RadarDisplay():
 
         self.tz = time.tzname[time.daylight]
 
-        pygame.init()
+        pygame.display.init()
         if self.verbose:
             print(f"\nDisplay: \n{pygame.display.Info()}\n{pygame.display.get_driver()} {pygame.display.list_modes()}\n")
 
