@@ -142,8 +142,8 @@ pip3 install -r requirements.txt
 ##sudo systemctl disable pocket1090.service
 
 # * view output
-## sudo journalctl -bo --unit=dump1090.service
-## sudo journalctl -bo --unit=pocket1090.service
+## sudo journalctl -b0 --unit=dump1090.service
+## sudo journalctl -b0 --unit=pocket1090.service
 
 # Reboot
 sudo reboot

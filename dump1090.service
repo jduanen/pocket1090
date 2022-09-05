@@ -1,16 +1,10 @@
 [Unit]
 Description=dump1090 RTL-SDR ADS-B Service
 After=multi-user.target
-ConditionalPathExists=!/opt/pocket1090/dump1090_not_to_be_run
 
 [Service]
 Type=exec
-Restart='always' # 'always': restart on exit; 'on-failure': restart if non-zero exit code
+Restart='always'
 RestartSec=10s
-##ExecStartPre=
 ExecStart=/opt/pocket1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
-##ExecStartPost=
 User=jdn
-##Nice=?
-##CPUSchedulingPolicy=?
-##CPUSchedulingPriority=?

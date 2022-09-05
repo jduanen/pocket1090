@@ -2,14 +2,13 @@
 Description=pocket1090 ADS-B Service
 Wants=dump1090.service
 After=dump1090.service
-ConditionalPathExists=!/opt/pocket1090/pocket1090_not_to_be_run
 
 [Service]
 Type=exec
-Restart=? # 'on-failure' or 'always'
-RestartSec=3
+Restart=always
+RestartSec=10
 User=jdn
 ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000
 
 [Install]
-WantedBY=multi-user.target
+WantedBy=multi-user.target
