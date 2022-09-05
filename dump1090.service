@@ -4,10 +4,13 @@ After=multi-user.target
 ConditionalPathExists=!/opt/pocket1090/dump1090_not_to_be_run
 
 [Service]
-Type=? # 'idle' or 'notify'
-Restart=? # 'on-failure'
+Type=exec
+Restart='always' # 'always': restart on exit; 'on-failure': restart if non-zero exit code
+RestartSec=10s
+##ExecStartPre=
 ExecStart=/opt/pocket1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
+##ExecStartPost=
 User=jdn
-
-[Install]
-WantedBy=multi-user.target # ???? pocket1090.service
+##Nice=?
+##CPUSchedulingPolicy=?
+##CPUSchedulingPriority=?

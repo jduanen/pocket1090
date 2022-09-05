@@ -32,13 +32,15 @@ LOG_FILE=
 DISTRO=$(cat /etc/*-release | grep -w NAME | cut -d= -f2 | tr -d '"')
 
 if [ "${DISTRO}" == "Ubuntu" ]; then
-    OPTIONS="${LOG_LEVEL} ${LOG_FILE} -p ${LAT},${LON} -o 0.0,0.0,0.0"
+    POCKET_OPTIONS="${LOG_LEVEL} ${LOG_FILE} -p ${LAT},${LON} -o 0.0,0.0,0.0"
+    DUMP_OPTIONS="--quiet --metric  --json-stats-every 0 --adaptive-range"
     DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}dump1090"
     JSON_FILE_PATH="/tmp"
     CONFIG_FILE="${HOME}/Code/pocket1090/pocket1090.yml"
 elif [ "${DISTRO}" == "Raspbian GNU/Linux" ]; then
-    OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
+    POCKET_OPTIONS="${LOG_LEVEL} ${LOG_FILE}"
+    DUMP_OPTIONS="--quiet --metric  --json-stats-every 0"
     DUMP1090_PATH="${HOME}/Code2/dump1090/"
     DUMP1090_BIN="${DUMP1090_PATH}package-bullseye/dump1090"
     JSON_FILE_PATH="/run/user/1000"
@@ -72,11 +74,11 @@ install() {
 }
 
 start_dump() {
-    ${INSTALL_PATH}dump1090 --quiet --metric  --json-stats-every 0 --write-json ${JSON_FILE_PATH} &
+    ${INSTALL_PATH}dump1090 ${DUMP_OPTIONS} --write-json ${JSON_FILE_PATH} &
 }
 
 start_pocket() {
-    ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${OPTIONS} -c ${CONFIG_FILE} ${JSON_FILE_PATH} &
+    ${INSTALL_PATH}pocket1090.py ${VERBOSE} ${POCKET_OPTIONS} -c ${CONFIG_FILE} ${JSON_FILE_PATH} &
 }
 
 start() {

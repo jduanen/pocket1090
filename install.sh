@@ -50,6 +50,9 @@ Section "InputClass"
         Option "EmulateThirdButtonMoveThreshold" "300"
 EndSection
 
+#  - calibrate touchpanel
+## Preferences->Calibrate Touchscreen
+
 # * RTL_SDR Receiver (Flightaware)
 #   - find vendor and product Id for the dongle
 lsusb | egrep RTL
@@ -109,16 +112,38 @@ pip3 install -r requirements.txt
 # * install the application and supporting files
 ./pocket1090.sh install
 
+# Disable unnecessary services
+# * disable/uninstall pulseaudio
+## ????
+
+# * disable cups
+## ????
+
+# *
+
 
 # Configure systemd to run the dump1090 server and pocket1090 application on boot and restart on failure
 # * install service files and set their permissions
 ##sudo cp ./{dump,pocket}1090.service /lib/systemd/system
 ##sudo chmod 0644 /lib/systemd/system/{dump,pocket}1090.service
 ##sudo systemctl daemon-reload
-##sudo systemctl start dump1090.service
+
+# * start/stop/restart
+##sudo systemctl {start,stop,restart} dump1090.service
+##sudo systemctl {start,stop,restart} pocket1090.service
+
+# * run at boot time
 ##sudo systemctl enable dump1090.service
-##sudo systemctl start pocket1090.service
+# N.B. pocket1090.service Wants dump1090.service, so it should be automatically started when starting pocket1090.service
 ##sudo systemctl enable pocket1090.service
+
+# * stop running at boot
+##sudo systemctl disable dump1090.service
+##sudo systemctl disable pocket1090.service
+
+# * view output
+## sudo journalctl -bo --unit=dump1090.service
+## sudo journalctl -bo --unit=pocket1090.service
 
 # Reboot
 sudo reboot
