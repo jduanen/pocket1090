@@ -1,14 +1,13 @@
 [Unit]
 Description=pocket1090 ADS-B Service
 Wants=dump1090.service
-After=dump1090.service
 
 [Service]
 Type=exec
+ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000
+User=jdn
 Restart=always
 RestartSec=10
-User=jdn
-ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000
 
 [Install]
 WantedBy=multi-user.target

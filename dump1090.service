@@ -3,10 +3,10 @@ Description=dump1090 RTL-SDR ADS-B Service
 
 [Service]
 Type=exec
-Restart=always
-RestartSec=10s
 ExecStart=/opt/pocket1090/dump1090 --quiet --metric --json-stats-every 0 --write-json /run/user/1000/
 User=jdn
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
