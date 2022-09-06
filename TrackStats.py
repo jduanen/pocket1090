@@ -12,6 +12,7 @@ import time
 
 class TrackStats():
     """ #### TODO
+      N.B. The averages are trailing exponential averages
     """
     def __init__(self):
         self.resetStats()
@@ -24,6 +25,10 @@ class TrackStats():
         self.maxAltitude = -1
         self.minAltitude = sys.maxsize
         self.avgAltitude = 0
+
+        self.maxRate = -1
+        self.minRate = sys.maxsize
+        self.avgRate = 0
 
         self.maxSpeed = -1
         self.minSpeed = sys.maxsize
@@ -50,6 +55,11 @@ class TrackStats():
             self.maxAltitude = track.altitude if track.altitude > self.maxAltitude else self.maxAltitude
             self.minAltitude = track.altitude if track.altitude < self.minAltitude else self.minAltitude
 
+        if isinstance(track.rate, int):
+            self.avgRate = (track.rate / 2) + (self.avgRate / 2)
+            self.maxRate = track.rate if track.rate > self.maxRate else self.maxRate
+            self.minRate = track.rate if track.rate < self.minRate else self.minRate
+
         if isinstance(track.speed, float):
             self.avgSpeed = (track.speed / 2) + (self.avgSpeed / 2)
             self.maxSpeed = track.speed if track.speed > self.maxSpeed else self.maxSpeed
@@ -75,6 +85,7 @@ class TrackStats():
         """
         print(f"Number of UniqueIds: {len(self.uids)}")
         print(f"Altitude: min={self.minAltitude}, max={self.maxAltitude}, avg={self.avgAltitude:.2f}")
+        print(f"Rate:     min={self.minRate}, max={self.maxRate}, avg={self.avgRate:.2f}")
         print(f"Speed:    min={self.minSpeed}, max={self.maxSpeed}, avg={self.avgSpeed:.2f}")
         print(f"Distance: min={self.minDistance:.2f}, max={self.maxDistance:.2f}, avg={self.avgDistance:.2f}")
         print(f"RSSI:     min={self.minRSSI}, max={self.maxRSSI}, avg={self.avgRSSI:.2f}")
