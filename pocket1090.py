@@ -49,12 +49,13 @@ REQUIRED_FIELDS = set({'lat', 'lon'})
 
 def run(options):
     rcvrFile = os.path.join(options.path, "receiver.json")
-    with open(rcvrFile, "r") as f:
-        rcvrInfo = json.load(f)
-    if options.verbose:
-        print("Receiver Info:")
-        json.dump(rcvrInfo, sys.stdout, indent=4, sort_keys=True)
-        print("")
+    if os.path.exists(rcvrFile):
+        with open(rcvrFile, "r") as f:
+            rcvrInfo = json.load(f)
+        if options.verbose:
+            print("Receiver Info:")
+            json.dump(rcvrInfo, sys.stdout, indent=4, sort_keys=True)
+            print("")
 
     if options.position is None:
         gps = GPS()
