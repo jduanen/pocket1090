@@ -23,7 +23,6 @@ raspi-config
 sudo ex /boot/config.txt
 #   - add ",noaudio" to the end of "dtoverlay=vc4-kms-v3d"
 #   - comment out "dtparam=audio=on"
-sudo apt-get purge pulseaudio
 
 
 # Set up for add-in HW
@@ -114,10 +113,10 @@ pip3 install -r requirements.txt
 
 # Disable unnecessary services
 # * disable/uninstall pulseaudio
-## ????
+sudo apt-get purge pulseaudio
 
 # * disable cups
-## ????
+sudo systemctl disable cups.service
 
 # *
 
