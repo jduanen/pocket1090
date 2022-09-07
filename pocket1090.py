@@ -140,7 +140,7 @@ def getOps():
         "-c", "--configFile", action="store", type=str, default=DEF_CONFIG_FILE,
         help="Path to file with configuration information; will be created if doesn't exist")
     ap.add_argument(
-        "-e", "--exceptsFile", action="store", type=str,
+        "-e", "--exceptsFile", action="store", type=str, default='-',
         help="Path to file where exceptional track information is to be stored ('-' means stdout)")
     ap.add_argument(
         "-f", "--fullScreen", action="store_true", default=False,
