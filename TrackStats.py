@@ -55,10 +55,15 @@ class TrackStats():
             self.maxAltitude = track.altitude if track.altitude > self.maxAltitude else self.maxAltitude
             self.minAltitude = track.altitude if track.altitude < self.minAltitude else self.minAltitude
 
-        if isinstance(track.rate, int):
-            self.avgRate = (track.rate / 2) + (self.avgRate / 2)
-            self.maxRate = track.rate if track.rate > self.maxRate else self.maxRate
-            self.minRate = track.rate if track.rate < self.minRate else self.minRate
+        rate = None
+        if isinstance(track.geomRate, int):
+            rate = track.geomRate
+        elif isinstance(track.baroRate, int):
+            rate = track.baroRate
+        if rate is not None:
+            self.avgRate = (rate / 2) + (self.avgRate / 2)
+            self.maxRate = rate if rate > self.maxRate else self.maxRate
+            self.minRate = rate if rate < self.minRate else self.minRate
 
         if isinstance(track.speed, float):
             self.avgSpeed = (track.speed / 2) + (self.avgSpeed / 2)

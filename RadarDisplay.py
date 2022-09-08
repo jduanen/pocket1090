@@ -569,7 +569,8 @@ class RadarDisplay():
         self._initScreen(orientation[0])
 
         if self.verbose >= 2:
-            print("flight      alt.  speed   dir.  dist.   azi.  cat.")
+            #### FIXME
+            print("flight      alt.  speed   dir.  rate  rate  dist.   azi.  cat.")
             print("--------  ------  -----  -----  -----  -----  ----")
         table = []
         self.trackPositions = []
@@ -577,12 +578,22 @@ class RadarDisplay():
             alt = track.altitude if isinstance(track.altitude, int) else " "
             speed = round(track.speed, 0) if isinstance(track.speed, float) else " "
             heading = round(track.heading, 1) if isinstance(track.heading, float) else " "
-            table.append([track.flightNumber, alt, speed, heading, round(track.distance, 2), round(track.azimuth, 1), track.category, track.rssi])
+            geomRate = track.geomRate if isinstance(track.geomRate, int) else " "
+            baroRate = track.baroRate if isinstance(track.baroRate, int) else " "
+            if isinstance(geomRate, int):
+                rate = geomRate
+            elif isinstance(baroRate, int):
+                rate = baroRate
+            else:
+                rate = " "
+            table.append([track.flightNumber, alt, speed, rate, round(track.distance, 2), round(track.azimuth, 1), track.category, track.rssi])
             if self.verbose >= 2:
                 alt = f"{track.altitude: >6}" if isinstance(track.altitude, int) else "      "
                 speed = f"{track.speed:5.1f}" if isinstance(track.speed, float) else "     "
                 heading = f"{track.heading:5.1f}" if isinstance(track.heading, float) else "     "
-                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
+                geomRate = f"{track.geomRate: >5}" if isinstance(track.geomRate, int) else "     "
+                baroRate = f"{track.baroRate: >5}" if isinstance(track.baroRate, int) else "     "
+                print(f"{track.flightNumber: <8}, {alt}, {speed}, {heading}, {geomRate}, {baroRate}, {track.distance:5.1f}, {track.azimuth:5.1f},  {track.category: >2}")
             if self.verbose >= 2:
                 print(track)
             #### TODO implement per-track trails, for now do them all the same
@@ -594,7 +605,7 @@ class RadarDisplay():
         y = self.diameter + self.buttonHeight + 4
         self.screen.fill(self.bgColor, Rect(0, y, self.diameter, (self.windowSize[1] - y)))
         if self.infoMode == SUMMARY_MODE:
-            columns = ["Flight", "Feet", "Knots", "Head.", "Dist.", "Azi.", "Cat.", "RSSI"]
+            columns = ["Flight", "Feet", "Knots", "Rate", "Dist.", "Azi.", "Cat.", "RSSI"]
             t = tabulate(table, headers=columns)
             for line in t.split('\n'):
                 text = self.summaryFont.render(line, True, self.summaryFontColor, self.bgColor)
@@ -610,18 +621,22 @@ class RadarDisplay():
             #    self.selectedTrack = None
             if self.selectedTrack:
                 trk = self.selectedTrack
+                '''
                 alt = f"{trk.altitude: >6}" if isinstance(trk.altitude, int) else "      "
                 speed = f"{trk.speed:5.1f}" if isinstance(trk.speed, float) else "     "
                 heading = f"{trk.heading:5.1f}" if isinstance(trk.heading, float) else "     "
+                '''
                 lines = [
                     f"UniqueId:       {trk.uniqueId}",
                     f"Flight Number:  {trk.flightNumber}",
                     f"Baro Altitude:  {trk.altitude} FASL",
                     f"Ground Speed:   {trk.speed} knots",
                     f"Track Heading:  {trk.heading} deg",
+                    f"Vertical Rate:  {trk.geomRate} / {trk.baroRate} FPM",
                     f"Category:       {trk.category}",
                     f"Latitude:       {trk.lat}",
                     f"Longitude:      {trk.lon}",
+                    f"Squawk:         {trk.squawk}",
                     f"Distance to:    {trk.distance:.3f} Km",
                     f"Azimuth to:     {trk.azimuth:.1f} deg",
                     f"Last Seen:      {trk.seen} secs",
@@ -630,7 +645,7 @@ class RadarDisplay():
                     f"Timestamp:      {datetime.fromtimestamp(trk.timestamp).isoformat()} {self.tz}",
                     f"Location:       {trk.location}"
                 ]
-                y += 8
+                y += 4
                 for line in lines:
                     text = self.infoFont.render(line, True, self.infoFontColor, self.bgColor)
                     textRect = text.get_rect()

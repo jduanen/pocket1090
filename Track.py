@@ -11,7 +11,7 @@ from geopy import distance as geoDistance
 
 from __init__ import * #### FIXME
 
-#### TODO add 'alt_baro', 'geom_rate', 'squawk', and 'emergency' keys
+#### TODO add 'alt_baro', 'geom_rate', 'baro_rate', 'squawk', and 'emergency' keys
 
 TRACK_DEFS = {'hex': "unknown",
               'flight': "n/a",
@@ -20,6 +20,7 @@ TRACK_DEFS = {'hex': "unknown",
               'gs': None,
               'track': None,
               'geom_rate': None,
+              'baro_rate': None,
               'category': "?",
               'lat': None,
               'lon': None,
@@ -35,11 +36,12 @@ TRACK_KEYS = TRACK_DEFS.keys()
 class TrackSpec():
     uniqueId: str           # hex: 24-bit ICAO id, six hex digits, non-ICAO addresses start with '~'
     flightNumber: str       # flight: callsign, the flight name or aircraft registration as 8 chars
-    altitude: int           # alt_geom: geometric (GNSS / INS) altitude in feet referenced to the WGS84 ellipsoid
+    altitude: int           # alt_geom: geometric (GNSS/INS) altitude in feet referenced to the WGS84 ellipsoid
     baroAltitude: int       # alt_baro: barometric altitude in feet above sea level
     speed: float            # gs: ground speed in knots
     heading: float          # track: true track over ground in degrees (0-359)
-    rate: int               # baro_rate: barometric rate of climb/descent in feet per minute
+    geomRate: int           # geom_rate: geometric (GNSS/INS) rate of climb/descent in feet per minute
+    baroRate: int           # baro_rate: barometric rate of climb/descent in feet per minute
     category: str           # category: emitter category, identifies aircraft classes (values "A0"-"D7")
     lat: float              # lat: aircraft position in decimal degrees
     lon: float              # lon: aircraft position in decimal degrees
@@ -123,9 +125,14 @@ class Track():
             s += f"{self.heading:5.1f}"
         else:
             s += f"    ?"
-        s += f", rate: "
-        if self.rate:
-            s += f"{self.rate:5}"
+        s += f", geomRate: "
+        if self.geomRate:
+            s += f"{self.geomRate:5}"
+        else:
+            s += f"    ?"
+        s += f", baroRate: "
+        if self.baroRate:
+            s += f"{self.baroRate:5}"
         else:
             s += f"    ?"
         s += f", category: "
@@ -181,7 +188,8 @@ class Track():
         self.baroAltitude = kwargs.get('alt_baro', TRACK_DEFS['alt_baro'])
         self.speed = kwargs.get('gs', TRACK_DEFS['gs'])
         self.heading = kwargs.get('track', TRACK_DEFS['track'])
-        self.rate = kwargs.get('geom_rate', TRACK_DEFS['geom_rate'])
+        self.geomRate = kwargs.get('geom_rate', TRACK_DEFS['geom_rate'])
+        self.baroRate = kwargs.get('baro_rate', TRACK_DEFS['baro_rate'])
         self.category = kwargs.get('category', TRACK_DEFS['category'])
         self.lat = kwargs.get('lat', TRACK_DEFS['lat'])
         self.lon = kwargs.get('lon', TRACK_DEFS['lon'])
@@ -198,10 +206,11 @@ class Track():
             self.history.append(self.currentTrack)
         self.currentTrack = TrackSpec(self.uniqueId, self.flightNumber, self.altitude,
                                       self.baroAltitude, self.speed, self.heading,
-                                      self.rate, self.category, self.lat, self.lon,
-                                      self.squawk, self.seenPos, self.seen, self.rssi,
-                                      self.emergency, self.timestamp, self.location,
-                                      self.distance, self.azimuth)
+                                      self.geomRate, self.baroRate, self.category,
+                                      self.lat, self.lon, self.squawk, self.seenPos,
+                                      self.seen, self.rssi, self.emergency,
+                                      self.timestamp, self.location, self.distance,
+                                      self.azimuth)
 
     def currentTrack(self):
         """#### TODO
