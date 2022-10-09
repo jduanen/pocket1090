@@ -50,6 +50,9 @@ class GPS():
         lastWarning = start = time.time()
         while None in (lat, lon, utcTime):
             _, parsedMsg = self.nmr.read()
+            if parsedMsg is None:
+                logging.warning("Invalid GPS read")
+                continue
             now = time.time()
             if parsedMsg.msgID == "GGA":
                 if parsedMsg.quality == 0:
