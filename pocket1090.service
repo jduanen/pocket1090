@@ -4,7 +4,7 @@ Wants=dump1090.service
 
 [Service]
 Type=exec
-ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000
+ExecStart=/opt/pocket1090/pocket1090.py -L WARNING -f /run/user/1000 -c /opt/pocket1090/pocket1090.yml
 User=jdn
 Restart=always
 RestartSec=10
