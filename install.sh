@@ -58,7 +58,7 @@ lsusb | egrep RTL
 
 #   - create rules file to set permissions/group
 #### FIXME
-##sudo cat - >> /etc/udev/rules.d/50.rtlsdr.rules
+##sudo cat - >> /etc/udev/rules.d/50-rtlsdr.rules
 ##SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832", GROUP="users", MODE="0666"
 
 # * GPS Receiver (Adafruit MTK3339)
