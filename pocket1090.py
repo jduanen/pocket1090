@@ -61,7 +61,7 @@ def run(options):
         gps = GPS()
     if options.orientation is None:
         compass = Compass()
-    radar = RadarDisplay(options.config['assetsPath'], fullScreen=options.fullScreen, verbose=options.verbose)
+    radar = RadarDisplay(options.config['assetsPath'], fullScreen=options.config['fullScreen'], verbose=options.verbose)
 
     running = True
     aircraftFile = os.path.join(options.path, "aircraft.json")
@@ -240,7 +240,7 @@ def getOps():
         if opts.exceptFd:
             print(f"    Excepts Track file: {opts.exceptFd.name}")
         print(f"    Asset Files Path:   {opts.config['assetsPath']}")
-        if opts.fullScreen:
+        if opts.config['fullScreen']:
             print(f"    Enable Full Screen Mode")
         print(f"    Log level:          {opts.config['logLevel']}")
         if opts.config['logFile']:
