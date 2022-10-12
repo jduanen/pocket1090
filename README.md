@@ -34,6 +34,9 @@ Uses the dump1090-fa 1.09GHz SDR-based ADS-B and Mode S/3A/3C decoder.
 ![Case Top v1.0](caseTopV1_0A.png)
 ![Case Top v1.0](caseTopV1_0B.png)
 
+![Enclosure Front](encFront.png)
+![Enclosure Front](encBack.png)
+
 ### Handheld Device Example Displays
 
 #### Summary Mode
