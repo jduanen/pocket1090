@@ -493,10 +493,10 @@ class RadarDisplay():
         if self.trackPositions:
             for position, track in self.trackPositions:
                 if not isinstance(position, tuple):
-                    print("PPPP", type(position))
+                    logging.warning("No position in track")
                     continue
                 if not isinstance(location, tuple):
-                    print("LLLL", type(location))
+                    logging.warning("No location in track")
                     continue
                 d = dist(location, position)
                 if d < minDist:
